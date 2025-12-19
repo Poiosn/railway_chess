@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import chess
-import chess.engine  # <--- Required for Stockfish
+import chess.engine
 import time
 import random
 import secrets
@@ -11,7 +11,12 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
-import shutil # To find stockfish path
+import shutil
+
+# ===== FLASK APP INITIALIZATION (Restored) =====
+app = Flask(__name__)
+app.config["SECRET_KEY"] = secrets.token_hex(16)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 # ===== DATABASE POOLING =====
 db_pool = None
@@ -32,12 +37,12 @@ def init_db_pool():
         db_pool = psycopg2.pool.SimpleConnectionPool(1, 4, dsn=DATABASE_URL)
         print("✅ Database connection pool created!")
         
+        # Initialize Tables
         conn = db_pool.getconn()
         try:
             cur = conn.cursor()
             
-            # 1. Create Visitors Table (New Structure)
-            # We use visit_date as PRIMARY KEY to ensure one row per day
+            # Visitors Table
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS visitors (
                     visit_date DATE PRIMARY KEY DEFAULT CURRENT_DATE,
@@ -45,7 +50,7 @@ def init_db_pool():
                 );
             """)
             
-            # 2. Create Games Table
+            # Games Table
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS games (
                     id SERIAL PRIMARY KEY,
@@ -79,10 +84,20 @@ def get_db_conn():
     if db_pool:
         try:
             conn = db_pool.getconn()
-            if conn.closed:
-                db_pool.putconn(conn, close=True)
-                return db_pool.getconn()
-            return conn
+            if conn:
+                if conn.closed:
+                    db_pool.putconn(conn, close=True)
+                    return db_pool.getconn()
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT 1")
+                    return conn
+                except (psycopg2.InterfaceError, psycopg2.OperationalError):
+                    try:
+                        db_pool.putconn(conn, close=True)
+                    except:
+                        pass
+                    return db_pool.getconn()
         except Exception as e:
             print(f"⚠️ DB Pool Exhausted or Error: {e}")
             return None
@@ -96,7 +111,7 @@ def release_db_conn(conn):
         except Exception:
             pass 
 
-# Initialize DB on module load
+# Initialize DB on start
 init_db_pool()
 
 # ===== STOCKFISH CONFIGURATION =====
@@ -124,8 +139,6 @@ def increment_visitor_count():
     if not conn: return
     try:
         cur = conn.cursor()
-        # UPSERT Logic: Try to insert today's date. 
-        # If it exists (ON CONFLICT), update the count instead.
         cur.execute("""
             INSERT INTO visitors (visit_date, visit_count) 
             VALUES (CURRENT_DATE, 1)
@@ -147,7 +160,6 @@ def visitor_count_api():
     if conn:
         try:
             cur = conn.cursor()
-            # UPDATED: Sum all visit_counts to get the total
             cur.execute("SELECT COALESCE(SUM(visit_count), 0) FROM visitors")
             res = cur.fetchone()
             count = res[0] if res else 0
@@ -480,7 +492,7 @@ def bot_play(room):
         if STOCKFISH_PATH:
             try:
                 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-                # Analyze for 0.5 seconds
+                # Analyze for 0.5 seconds (adjustable)
                 result = engine.play(board, chess.engine.Limit(time=0.5))
                 best_move = result.move
                 engine.quit()
