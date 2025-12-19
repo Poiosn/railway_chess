@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import chess
+import chess.engine  # <--- Required for Stockfish
 import time
 import random
 import secrets
@@ -10,13 +11,9 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
+import shutil # To find stockfish path
 
-# ===== FLASK APP =====
-app = Flask(__name__)
-app.config["SECRET_KEY"] = secrets.token_hex(16)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
-
-# ===== DATABASE CONFIGURATION =====
+# ===== DATABASE POOLING =====
 db_pool = None
 
 def init_db_pool():
@@ -31,20 +28,24 @@ def init_db_pool():
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     
     try:
+        # Reduced pool size for Railway stability
         db_pool = psycopg2.pool.SimpleConnectionPool(1, 4, dsn=DATABASE_URL)
         print("✅ Database connection pool created!")
         
         conn = db_pool.getconn()
         try:
             cur = conn.cursor()
+            
+            # 1. Create Visitors Table (New Structure)
+            # We use visit_date as PRIMARY KEY to ensure one row per day
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS visitors (
-                    id SERIAL PRIMARY KEY,
-                    visit_count INTEGER DEFAULT 0,
-                    visit_date DATE DEFAULT CURRENT_DATE,
-                    last_updated TIMESTAMP DEFAULT NOW()
+                    visit_date DATE PRIMARY KEY DEFAULT CURRENT_DATE,
+                    visit_count INTEGER DEFAULT 0
                 );
             """)
+            
+            # 2. Create Games Table
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS games (
                     id SERIAL PRIMARY KEY,
@@ -57,14 +58,10 @@ def init_db_pool():
                     end_time TIMESTAMP
                 );
             """)
-            cur.execute("""
-                INSERT INTO visitors (id, visit_count, visit_date, last_updated) 
-                VALUES (1, 0, CURRENT_DATE, NOW())
-                ON CONFLICT (id) DO NOTHING;
-            """)
+            
             conn.commit()
             cur.close()
-            print("✅ Database tables ready.")
+            print("✅ Database tables checked/created.")
         except Exception as e:
             print(f"❌ Table creation error: {e}")
             conn.rollback()
@@ -99,8 +96,12 @@ def release_db_conn(conn):
         except Exception:
             pass 
 
-# Initialize DB on module load (Important for Gunicorn)
+# Initialize DB on module load
 init_db_pool()
+
+# ===== STOCKFISH CONFIGURATION =====
+STOCKFISH_PATH = shutil.which("stockfish") or "/usr/games/stockfish" or "/usr/bin/stockfish"
+print(f"♟️ Stockfish Engine Path: {STOCKFISH_PATH}")
 
 # Stores game state
 games = {}
@@ -123,19 +124,14 @@ def increment_visitor_count():
     if not conn: return
     try:
         cur = conn.cursor()
+        # UPSERT Logic: Try to insert today's date. 
+        # If it exists (ON CONFLICT), update the count instead.
         cur.execute("""
-            UPDATE visitors 
-            SET visit_count = visit_count + 1, 
-                last_updated = NOW(), 
-                visit_date = CURRENT_DATE 
-            WHERE id = 1 
-            RETURNING visit_count
+            INSERT INTO visitors (visit_date, visit_count) 
+            VALUES (CURRENT_DATE, 1)
+            ON CONFLICT (visit_date) 
+            DO UPDATE SET visit_count = visitors.visit_count + 1
         """)
-        if not cur.fetchone():
-            cur.execute("""
-                INSERT INTO visitors (id, visit_count, visit_date, last_updated) 
-                VALUES (1, 1, CURRENT_DATE, NOW())
-            """)
         conn.commit()
         cur.close()
     except Exception as e:
@@ -151,7 +147,8 @@ def visitor_count_api():
     if conn:
         try:
             cur = conn.cursor()
-            cur.execute("SELECT visit_count FROM visitors WHERE id = 1")
+            # UPDATED: Sum all visit_counts to get the total
+            cur.execute("SELECT COALESCE(SUM(visit_count), 0) FROM visitors")
             res = cur.fetchone()
             count = res[0] if res else 0
             cur.close()
@@ -216,7 +213,6 @@ def update_time(g):
     elapsed = now - g["lastUpdate"]
     g["lastUpdate"] = now
     
-    # FIX: Use <= 0 to catch float precision issues or missed ticks
     if g["board"].turn:
         g["whiteTime"] = max(0, g["whiteTime"] - elapsed)
         if g["whiteTime"] <= 0: 
@@ -260,28 +256,18 @@ def save_game(room, g):
             conn.rollback()
         finally: release_db_conn(conn)
 
-# --- TIMEOUT WATCHER (BACKGROUND THREAD) ---
+# --- TIMEOUT WATCHER ---
 def timeout_watcher():
-    """Checks for time-outs every second"""
-    print("⏰ Timeout watcher started")
     while True:
         time.sleep(1)
-        # Use list() to avoid runtime error if dict changes size during iteration
         for r, g in list(games.items()):
-            # Only check active games that haven't finished
             if g.get("isActive") and not g["winner"]:
                 with g["lock"]:
                     update_time(g)
-                    # If update_time() just set a winner, notify clients
                     if g["winner"]:
-                        print(f"⌛ Time out in room {r}. Winner: {g['winner']}")
                         save_game(r, g)
                         socketio.emit("game_update", {"state": export_state(r)}, room=r)
 
-# START BACKGROUND THREAD
-# FIX: Start this thread globally so Gunicorn workers pick it up
-# Note: In a multi-worker Gunicorn setup without sticky sessions or redis, 
-# game state in memory is isolated per worker. Ensure 1 worker or sticky sessions.
 timeout_thread = threading.Thread(target=timeout_watcher, daemon=True)
 timeout_thread.start()
 
@@ -292,7 +278,6 @@ def handle_disconnect_timeout(room, color):
     
     with g["lock"]:
         if g["winner"]: return
-        
         if color == "white" and g.get("white_disconnect_timer"):
             g["winner"] = "black"
             g["reason"] = "abandonment"
@@ -303,7 +288,6 @@ def handle_disconnect_timeout(room, color):
             g["black_disconnect_timer"] = None
         else:
             return 
-
         save_game(room, g)
         socketio.emit("game_update", {"state": export_state(room)}, room=room)
 
@@ -349,7 +333,6 @@ def create(data):
     
     sid_to_room[request.sid] = room
     join_room(room)
-    
     emit("room_created", {
         "color": "white", 
         "state": export_state(room), 
@@ -407,7 +390,6 @@ def join(data):
         "room": room, 
         "playerNames": {"white": g["white_player"], "black": g["black_player"]}
     })
-    
     socketio.emit("game_start", {"state": export_state(room)}, room=room)
 
 @socketio.on("disconnect")
@@ -429,15 +411,9 @@ def on_disconnect():
 
         if disconnected_color and g.get("isActive") and not g["winner"]:
             print(f"⚠️ {disconnected_color} disconnected from {room}. Starting {DISCONNECT_TIMEOUT}s timer.")
-            
-            socketio.emit("player_disconnected", {
-                "color": disconnected_color, 
-                "timeout": DISCONNECT_TIMEOUT
-            }, room=room)
-
+            socketio.emit("player_disconnected", {"color": disconnected_color, "timeout": DISCONNECT_TIMEOUT}, room=room)
             t = threading.Timer(DISCONNECT_TIMEOUT, handle_disconnect_timeout, [room, disconnected_color])
             t.start()
-            
             if disconnected_color == "white":
                 g["white_disconnect_timer"] = t
             else:
@@ -488,27 +464,47 @@ def move(data):
             if g["bot"] and not g["winner"]:
                 socketio.start_background_task(bot_play, room)
 
+# ===== UPDATED BOT PLAY WITH STOCKFISH =====
 def bot_play(room):
-    time.sleep(1)
+    time.sleep(0.5) 
     if room not in games: return
     g = games[room]
+    
     with g["lock"]:
         board = g["board"]
         if board.is_game_over(): return
-        mv = random.choice(list(board.legal_moves))
-        san = board.san(mv)
-        board.push(mv)
-        if board.is_game_over():
-            g["winner"] = "black"
-            g["reason"] = "checkmate"
-            save_game(room, g)
+
+        best_move = None
         
-        socketio.emit("game_update", {
-            "state": export_state(room),
-            "lastMove": {"from": {"row": 7-chess.square_rank(mv.from_square), "col": chess.square_file(mv.from_square)}, 
-                         "to": {"row": 7-chess.square_rank(mv.to_square), "col": chess.square_file(mv.to_square)}},
-            "moveNotation": san
-        }, room=room)
+        # 1. Try Stockfish
+        if STOCKFISH_PATH:
+            try:
+                engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+                # Analyze for 0.5 seconds
+                result = engine.play(board, chess.engine.Limit(time=0.5))
+                best_move = result.move
+                engine.quit()
+            except Exception as e:
+                print(f"❌ Stockfish Error: {e}")
+                best_move = random.choice(list(board.legal_moves))
+        else:
+            best_move = random.choice(list(board.legal_moves))
+
+        if best_move:
+            san = board.san(best_move)
+            board.push(best_move)
+            
+            if board.is_game_over():
+                g["winner"] = "black"
+                g["reason"] = "checkmate"
+                save_game(room, g)
+            
+            socketio.emit("game_update", {
+                "state": export_state(room),
+                "lastMove": {"from": {"row": 7-chess.square_rank(best_move.from_square), "col": chess.square_file(best_move.from_square)}, 
+                             "to": {"row": 7-chess.square_rank(best_move.to_square), "col": chess.square_file(best_move.to_square)}},
+                "moveNotation": san
+            }, room=room)
 
 @socketio.on("get_possible_moves")
 def get_moves(data):
