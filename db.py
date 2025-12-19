@@ -16,121 +16,138 @@ def init_db_pool():
         print("⚠️ DATABASE_URL not set. Database features will be disabled.")
         return
 
-    # Fix Railway Postgres URL (start with postgresql://)
+    # Fix Railway Postgres URL
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     
     try:
-        # Create a pool of connections (min 1, max 20)
-        db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, dsn=DATABASE_URL)
+        # Reduced pool size (1-4) for Railway stability
+        db_pool = psycopg2.pool.SimpleConnectionPool(1, 4, dsn=DATABASE_URL)
         print("✅ Database connection pool created!")
         
-        # Create tables if they don't exist
-        conn = db_pool.getconn()
-        try:
-            cur = conn.cursor()
-            
-            # 1. Games Table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS games (
-                    id SERIAL PRIMARY KEY,
-                    room_name VARCHAR(255),
-                    white_player VARCHAR(255),
-                    black_player VARCHAR(255),
-                    winner VARCHAR(50),
-                    win_reason VARCHAR(100),
-                    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    end_time TIMESTAMP
-                );
-            """)
-            
-            # 2. Visitors Table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS visitors (
-                    id SERIAL PRIMARY KEY,
-                    visit_count INTEGER DEFAULT 0,
-                    visit_date DATE DEFAULT CURRENT_DATE,
-                    last_updated TIMESTAMP DEFAULT NOW()
-                );
-            """)
-            
-            # Initialize visitor row 1 if not exists
-            cur.execute("""
-                INSERT INTO visitors (id, visit_count, visit_date, last_updated)
-                VALUES (1, 0, CURRENT_DATE, NOW())
-                ON CONFLICT (id) DO NOTHING;
-            """)
-            
-            conn.commit()
-            cur.close()
-            print("✅ Database tables checked/created.")
-        except Exception as e:
-            print(f"❌ Table creation error: {e}")
-            conn.rollback()
-        finally:
-            db_pool.putconn(conn)
+        # Initialize Tables
+        conn = get_db_conn()
+        if conn:
+            try:
+                cur = conn.cursor()
+                
+                # 1. Create Visitors Table (New Structure: Date-based)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS visitors (
+                        visit_date DATE PRIMARY KEY DEFAULT CURRENT_DATE,
+                        visit_count INTEGER DEFAULT 0
+                    );
+                """)
+                
+                # 2. Create Games Table
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS games (
+                        id SERIAL PRIMARY KEY,
+                        room_name VARCHAR(255),
+                        white_player VARCHAR(255),
+                        black_player VARCHAR(255),
+                        winner VARCHAR(50),
+                        win_reason VARCHAR(100),
+                        start_time TIMESTAMP,
+                        end_time TIMESTAMP
+                    );
+                """)
+                
+                conn.commit()
+                cur.close()
+                print("✅ Database tables checked/created.")
+            except Exception as e:
+                print(f"❌ Table creation error: {e}")
+                conn.rollback()
+            finally:
+                release_db_conn(conn)
             
     except Exception as e:
         print(f"❌ Failed to create DB pool: {e}")
 
 def get_db_conn():
-    """Get a connection from the pool."""
+    """Get a fresh, live connection from the pool."""
     global db_pool
     if not db_pool:
         init_db_pool()
+    
     if db_pool:
-        return db_pool.getconn()
+        try:
+            conn = db_pool.getconn()
+            # Liveness Check: Verify connection is active
+            if conn:
+                if conn.closed:
+                    db_pool.putconn(conn, close=True)
+                    return db_pool.getconn()
+                
+                # Double check with a simple query
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT 1")
+                    return conn
+                except (psycopg2.InterfaceError, psycopg2.OperationalError):
+                    # Connection is dead, get a new one
+                    try:
+                        db_pool.putconn(conn, close=True)
+                    except:
+                        pass
+                    return db_pool.getconn()
+        except Exception as e:
+            print(f"⚠️ DB Pool Exhausted or Error: {e}")
+            return None
     return None
 
 def release_db_conn(conn):
-    """Return a connection to the pool."""
+    """Return connection to pool."""
     global db_pool
     if db_pool and conn:
-        db_pool.putconn(conn)
+        try:
+            db_pool.putconn(conn)
+        except Exception:
+            pass
 
-# ===== HELPER FUNCTIONS FOR APP.PY =====
+# ===== APP HELPER FUNCTIONS =====
 
 def increment_visitor_count():
-    """Increments the visitor count and updates timestamps."""
+    """Upsert visitor count for today."""
     conn = get_db_conn()
-    if not conn: return 0
-    
-    count = 0
+    if not conn: return
     try:
         cur = conn.cursor()
-        # Update existing row
+        # Try to insert today's date. If exists, add +1 to count.
         cur.execute("""
-            UPDATE visitors 
-            SET visit_count = visit_count + 1, 
-                last_updated = NOW(), 
-                visit_date = CURRENT_DATE 
-            WHERE id = 1 
-            RETURNING visit_count
+            INSERT INTO visitors (visit_date, visit_count) 
+            VALUES (CURRENT_DATE, 1)
+            ON CONFLICT (visit_date) 
+            DO UPDATE SET visit_count = visitors.visit_count + 1
         """)
-        res = cur.fetchone()
-        
-        if res:
-            count = res[0]
-        else:
-            # Fallback if row 1 was deleted
-            cur.execute("""
-                INSERT INTO visitors (id, visit_count, visit_date, last_updated) 
-                VALUES (1, 1, CURRENT_DATE, NOW())
-                RETURNING visit_count
-            """)
-            count = 1
-            
         conn.commit()
         cur.close()
     except Exception as e:
         print(f"Visitor count error: {e}")
-        if conn: conn.rollback()
+        conn.rollback()
     finally:
         release_db_conn(conn)
+
+def get_total_visitor_count():
+    """Get sum of all visits."""
+    conn = get_db_conn()
+    count = 0
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COALESCE(SUM(visit_count), 0) FROM visitors")
+            res = cur.fetchone()
+            count = res[0] if res else 0
+            cur.close()
+        except Exception as e:
+            print(f"Visitor API error: {e}")
+            conn.rollback()
+        finally: release_db_conn(conn)
     return count
 
 def get_leaderboard_data(limit=5):
-    """Fetches top players based on wins."""
+    """Get top 5 players by wins."""
     conn = get_db_conn()
     data = []
     if conn:
@@ -150,18 +167,15 @@ def get_leaderboard_data(limit=5):
             cur.close()
         except Exception as e:
             print(f"Leaderboard error: {e}")
-        finally:
-            release_db_conn(conn)
+            conn.rollback()
+        finally: release_db_conn(conn)
     return [dict(row) for row in data]
 
-def save_game_record(room, g, end_time):
-    """Saves a finished game to the database."""
+def save_game_record(room, g, start_time, end_time, win_reason):
+    """Save finished game."""
     conn = get_db_conn()
     if conn:
         try:
-            start_time = g.get("start_timestamp", end_time)
-            win_reason = g.get("reason", "unknown")
-            
             cur = conn.cursor()
             cur.execute("""
                 INSERT INTO games 
@@ -178,10 +192,10 @@ def save_game_record(room, g, end_time):
             ))
             conn.commit()
             cur.close()
+            print(f"✅ Game {room} saved to DB.")
             return True
         except Exception as e:
-            print(f"Save game error: {e}")
-            if conn: conn.rollback()
-        finally:
-            release_db_conn(conn)
+            print(f"❌ Save game error: {e}")
+            conn.rollback()
+        finally: release_db_conn(conn)
     return False
