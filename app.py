@@ -13,12 +13,12 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime
 import shutil
 
-# ===== FLASK APP INITIALIZATION (Restored) =====
+# ===== FLASK APP =====
 app = Flask(__name__)
 app.config["SECRET_KEY"] = secrets.token_hex(16)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# ===== DATABASE POOLING =====
+# ===== DATABASE CONFIGURATION =====
 db_pool = None
 
 def init_db_pool():
@@ -33,24 +33,18 @@ def init_db_pool():
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     
     try:
-        # Reduced pool size for Railway stability
         db_pool = psycopg2.pool.SimpleConnectionPool(1, 4, dsn=DATABASE_URL)
         print("✅ Database connection pool created!")
         
-        # Initialize Tables
         conn = db_pool.getconn()
         try:
             cur = conn.cursor()
-            
-            # Visitors Table
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS visitors (
                     visit_date DATE PRIMARY KEY DEFAULT CURRENT_DATE,
                     visit_count INTEGER DEFAULT 0
                 );
             """)
-            
-            # Games Table
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS games (
                     id SERIAL PRIMARY KEY,
@@ -63,10 +57,9 @@ def init_db_pool():
                     end_time TIMESTAMP
                 );
             """)
-            
             conn.commit()
             cur.close()
-            print("✅ Database tables checked/created.")
+            print("✅ Database tables ready.")
         except Exception as e:
             print(f"❌ Table creation error: {e}")
             conn.rollback()
@@ -111,14 +104,11 @@ def release_db_conn(conn):
         except Exception:
             pass 
 
-# Initialize DB on start
 init_db_pool()
 
-# ===== STOCKFISH CONFIGURATION =====
 STOCKFISH_PATH = shutil.which("stockfish") or "/usr/games/stockfish" or "/usr/bin/stockfish"
 print(f"♟️ Stockfish Engine Path: {STOCKFISH_PATH}")
 
-# Stores game state
 games = {}
 sid_to_room = {}
 DISCONNECT_TIMEOUT = 15.0 
@@ -206,6 +196,23 @@ def board_to_matrix(board):
         grid[7 - chess.square_rank(sq)][chess.square_file(sq)] = piece.symbol()
     return grid
 
+# === NEW HELPER FUNCTION FOR OPTIMIZATION ===
+def get_legal_moves_map(board):
+    """Pre-calculates all legal moves mapped by starting square (row,col)"""
+    moves = {}
+    for move in board.legal_moves:
+        # Convert to frontend matrix coordinates
+        r_from = 7 - chess.square_rank(move.from_square)
+        c_from = chess.square_file(move.from_square)
+        r_to = 7 - chess.square_rank(move.to_square)
+        c_to = chess.square_file(move.to_square)
+        
+        key = f"{r_from},{c_from}"
+        if key not in moves:
+            moves[key] = []
+        moves[key].append({"row": r_to, "col": c_to})
+    return moves
+
 def export_state(room):
     g = games[room]
     return {
@@ -215,8 +222,12 @@ def export_state(room):
         "winner": g["winner"],
         "reason": g.get("reason"),
         "isActive": g.get("isActive", False),
+        "whiteTime": g["whiteTime"], 
+        "blackTime": g["blackTime"],
         "whiteTimeFormatted": format_seconds(g["whiteTime"]),
-        "blackTimeFormatted": format_seconds(g["blackTime"])
+        "blackTimeFormatted": format_seconds(g["blackTime"]),
+        # === SEND MOVES UPFRONT ===
+        "moves": get_legal_moves_map(g["board"])
     }
 
 def update_time(g):
@@ -268,7 +279,6 @@ def save_game(room, g):
             conn.rollback()
         finally: release_db_conn(conn)
 
-# --- TIMEOUT WATCHER ---
 def timeout_watcher():
     while True:
         time.sleep(1)
@@ -283,7 +293,6 @@ def timeout_watcher():
 timeout_thread = threading.Thread(target=timeout_watcher, daemon=True)
 timeout_thread.start()
 
-# --- TIMEOUT HANDLER ---
 def handle_disconnect_timeout(room, color):
     if room not in games: return
     g = games[room]
@@ -311,7 +320,6 @@ def cancel_timer(g, color):
         g["black_disconnect_timer"].cancel()
         g["black_disconnect_timer"] = None
 
-# --- SOCKET HANDLERS ---
 @socketio.on("create_room")
 def create(data):
     room = data["room"]
@@ -476,7 +484,6 @@ def move(data):
             if g["bot"] and not g["winner"]:
                 socketio.start_background_task(bot_play, room)
 
-# ===== UPDATED BOT PLAY WITH STOCKFISH =====
 def bot_play(room):
     time.sleep(0.5) 
     if room not in games: return
@@ -487,12 +494,9 @@ def bot_play(room):
         if board.is_game_over(): return
 
         best_move = None
-        
-        # 1. Try Stockfish
         if STOCKFISH_PATH:
             try:
                 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-                # Analyze for 0.5 seconds (adjustable)
                 result = engine.play(board, chess.engine.Limit(time=0.5))
                 best_move = result.move
                 engine.quit()
@@ -517,15 +521,6 @@ def bot_play(room):
                              "to": {"row": 7-chess.square_rank(best_move.to_square), "col": chess.square_file(best_move.to_square)}},
                 "moveNotation": san
             }, room=room)
-
-@socketio.on("get_possible_moves")
-def get_moves(data):
-    room = data["room"]
-    if room not in games: return
-    board = games[room]["board"]
-    f = chess.square(data["from"]["col"], 7-data["from"]["row"])
-    moves = [{"row": 7-chess.square_rank(m.to_square), "col": chess.square_file(m.to_square)} for m in board.legal_moves if m.from_square == f]
-    emit("possible_moves", {"moves": moves})
 
 @socketio.on("send_message")
 def msg(data): socketio.emit("chat_message", data, room=data["room"])
