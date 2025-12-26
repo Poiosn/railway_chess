@@ -16,8 +16,8 @@
       min-height:100vh;
       display:flex;
       justify-content:center;
-      align-items:center;
-      padding:20px;
+      align-items:flex-start;
+      padding:0;
       position:relative;
       overflow-x:hidden;
       user-select: none;
@@ -41,8 +41,10 @@
       max-height:92vh;
       position:relative;
       z-index:1;
-      overflow-y:visible;
+      overflow-y: visible;
       animation: containerFadeIn 0.6s ease;
+      transform: scale(0.7);  /* ADD THIS - reduces by 30% */
+      transform-origin: top center;
     }
 
     @keyframes containerFadeIn {
@@ -585,16 +587,31 @@
       background: rgba(255, 255, 255, 0.6);
       backdrop-filter: blur(10px);
       border-radius: 16px;
-      padding: 12px;
+      padding: 14px;
+      height: 500px;
+      overflow-y: scroll;
       min-width: 0;
       border: 1px solid rgba(255, 255, 255, 0.8);
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     }
     .move-history h4 {
       color: #2c3e50;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       font-size: 15px;
       font-weight: 800;
+      position: sticky;
+      top: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 10px 8px;
+      border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+      border-radius: 8px 8px 0 0;
+      z-index: 10;
+      margin-left: -14px;
+      margin-right: -14px;
+      margin-top: -14px;
+      padding-left: 14px;
+      padding-right: 14px;
     }
     
     .move-list {
@@ -1123,16 +1140,6 @@
             font-size: 12px;
         }
     }
-    /* SCALE DOWN ENTIRE UI BY 30% */
-.container {
-  transform: scale(0.7);
-  transform-origin: top center;
-}
-
-body {
-  padding: 0;
-  align-items: flex-start;
-}
   </style>
 </head>
 
@@ -1182,7 +1189,7 @@ body {
 
           <div class="move-history" style="flex:1;">
             <h4>📜 Move History</h4>
-            <div class="move-list" id="moveList" style="height:570px; overflow-y:auto;"></div>
+            <div class="move-list" id="moveList"></div>
           </div>
 
           <div class="chat-box" id="chatBox" style="flex:1;">
