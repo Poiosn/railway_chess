@@ -34,9 +34,9 @@
       box-shadow: 
         0 8px 32px 0 rgba(31, 38, 135, 0.37),
         inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
-      padding:28px;
+      padding:22px;
       width:98vw;
-      max-width:1800px;
+      max-width:1440px;
       height:auto;
       max-height:92vh;
       position:relative;
@@ -58,7 +58,7 @@
       -webkit-background-clip:text;
       -webkit-text-fill-color:transparent;
       background-clip:text;
-      font-size:36px;
+      font-size:29px;
       font-weight:900;
       margin-bottom:8px;
       letter-spacing:-1.5px;
@@ -388,7 +388,7 @@
     .board-section {
       position: relative;
       width: 100%;
-      max-width: 700px;
+      max-width: 560px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
@@ -399,7 +399,7 @@
     .chessboard {
       display: grid;
       grid-template-columns: repeat(8, 1fr);
-      width: min(92vw, 700px);
+      width: min(92vw, 560px);
       aspect-ratio: 1 / 1;
       height: auto;
       border: 6px solid rgba(44, 62, 80, 0.8);
@@ -586,7 +586,7 @@
       backdrop-filter: blur(10px);
       border-radius: 16px;
       padding: 14px;
-      height: 700px;
+      height: 560px;
       overflow-y: scroll;
       min-width: 0;
       border: 1px solid rgba(255, 255, 255, 0.8);
@@ -763,8 +763,8 @@
     }
 
     .promotion-pieces img {
-      width: 75px;
-      height: 75px;
+      width: 60px;
+      height: 60px;
       margin: 10px;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -944,7 +944,7 @@
     .sidebar {
       display: flex;
       gap: 20px;
-      width: 750px; /* Fixed width to prevent resizing */
+      width: 600px; /* Fixed width to prevent resizing */
       flex-shrink: 0;
       margin-top: 3%;
     }
@@ -1159,7 +1159,7 @@
         <h3>👥 Room: <span id="roomName"></span></h3>
       </div>
 
-      <div class="game-layout" style="display:flex; gap:40px; align-items:flex-start;">
+      <div class="game-layout" style="display:flex; gap:32px; align-items:flex-start;">
         <div class="board-section">
           
           <div class="turn-indicator" id="turnIndicator"></div>
@@ -1192,7 +1192,7 @@
 
           <div class="chat-box" id="chatBox" style="flex:1;">
             <h4>💬 Live Chat</h4>
-            <div class="chat-messages" id="chatMessages" style="height:570px;"></div>
+            <div class="chat-messages" id="chatMessages" style="height:450px;"></div>
             <div class="typing-indicator" id="typingIndicator"></div>
 
             <div class="chat-input" style="margin-top:10px; position:relative;">
