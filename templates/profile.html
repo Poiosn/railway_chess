@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chess Master — Profile & Stats</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 36px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .nav {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .nav button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .nav button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    /* Login/Register Forms */
+    .auth-container {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid rgba(102, 126, 234, 0.3);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .error-message {
+      background: #fee;
+      color: #c00;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .success-message {
+      background: #efe;
+      color: #0a0;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    /* Profile Stats */
+    .profile-header {
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      border-radius: 15px;
+      margin-bottom: 30px;
+    }
+
+    .profile-name {
+      font-size: 32px;
+      font-weight: 900;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .profile-rating {
+      font-size: 24px;
+      color: #667eea;
+      font-weight: 700;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 900;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    /* Landing Page Game Options - Added */
+    .time-control-section {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: rgba(224, 247, 250, 0.5);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    
+    .time-control-section h4 {
+      color: #00695c;
+      margin-bottom: 12px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    
+    .time-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .time-btn {
+      flex: 1 1 80px;
+      padding: 10px 8px;
+      background: white;
+      border: 2px solid #00897b;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 11px;
+      color: #00695c;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    
+    .time-btn:hover { 
+      background: #00897b; 
+      color: white; 
+      transform: translateY(-2px); 
+    }
+    
+    .time-btn.selected { 
+      background: #00695c; 
+      color: white; 
+      border-color: #004d40; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+    }
+
+    .room-controls {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .room-controls input[type="text"] {
+      flex: 2;
+      min-width: 180px;
+      padding: 12px;
+      border: 2px solid rgba(102, 126, 234, 0.3);
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      background: rgba(255,255,255,0.9);
+    }
+    
+    .room-controls input[type="text"]:focus { 
+      border-color: #667eea; 
+      background: #fff; 
+    }
+
+    .room-controls button {
+      flex: 1;
+      min-width: 110px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 12px;
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+      transition: transform 0.2s;
+    }
+    
+    .room-controls button:hover { transform: translateY(-2px); }
+
+    .btn-game {
+      width: 100%;
+      padding: 14px 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+      margin-top: 12px;
+    }
+
+    .btn-game:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn-global {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .btn-bot {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .btn-spectate {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    /* Game History */
+    .game-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .game-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .game-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .game-players {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .game-result {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .game-result.win {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .game-result.loss {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .game-result.draw {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .game-meta {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* Replay Viewer */
+    .replay-container {
+      display: grid;
+      grid-template-columns: 600px 1fr;
+      gap: 20px;
+      align-items: start;
+      justify-items: center;
+    }
+
+    .replay-board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      width: 600px;
+      height: 600px;
+      border: 4px solid #2c3e50;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .replay-square {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .replay-square.light {
+      background: #f0d9b5;
+    }
+
+    .replay-square.dark {
+      background: #b58863;
+    }
+
+    .replay-piece img {
+      width: 85%;
+      height: 85%;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+    }
+
+    .replay-controls {
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .replay-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .replay-buttons button {
+      flex: 1;
+      padding: 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .replay-buttons button:hover {
+      background: #764ba2;
+    }
+
+    .replay-buttons button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .move-list-replay {
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .move-item-replay {
+      padding: 6px 8px;
+      margin: 4px 0;
+      background: white;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-size: 14px;
+    }
+
+    .move-item-replay:hover {
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    }
+
+    .move-item-replay.active {
+      background: rgba(102, 126, 234, 0.15);
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Modal for spectate */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .game-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: #f8f9fa;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .game-item:hover {
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .game-item-players {
+      font-weight: 700;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .game-item-info {
+      font-size: 12px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .replay-container {
+        grid-template-columns: 1fr;
+      }
+
+      .replay-board {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>♔ Chess Master Profile ♚</h1>
+
+  <div class="nav">
+    <button onclick="window.location.href='/'">🏠 Home</button>
+    <button id="loginBtn" onclick="showSection('login')">🔐 Login</button>
+    <button id="registerBtn" onclick="showSection('register')">📝 Register</button>
+    <button id="profileBtn" onclick="showSection('profile')" style="display:none;">👤 Profile</button>
+    <button id="gamesBtn" onclick="showSection('games')" style="display:none;">🎮 My Games</button>
+    <button id="logoutBtn" onclick="logout()" style="display:none;">🚪 Logout</button>
+  </div>
+
+  <!-- Login Section -->
+  <div id="loginSection" class="section">
+    <div class="auth-container">
+      <h2 style="text-align:center; margin-bottom:20px;">Login</h2>
+      <div id="loginError" class="error-message"></div>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Username or Email</label>
+          <input type="text" id="loginUsername" required />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" required />
+        </div>
+        <button type="submit" class="btn-primary">Login</button>
+      </form>
+      <p style="text-align:center; margin-top:20px;">
+        Don't have an account? <a href="#" onclick="showSection('register'); return false;">Register</a>
+      </p>
+      <p style="text-align:center; margin-top:10px;">
+        <a href="#" onclick="showSection('forgot'); return false;">Forgot Username or Password?</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Forgot Password Section -->
+  <div id="forgotSection" class="section">
+    <div class="auth-container">
+      <h2 style="text-align:center; margin-bottom:20px;">🔑 Account Recovery</h2>
+      <div id="forgotError" class="error-message"></div>
+      <div id="forgotSuccess" class="success-message"></div>
+
+      <!-- Step 1: Enter Email -->
+      <div id="forgotStep1">
+        <p style="text-align:center; color:#666; margin-bottom:20px;">Enter your email to receive a reset code</p>
+        <form onsubmit="handleForgotUsername(event)">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="forgotEmail" required />
+          </div>
+          <button type="submit" class="btn-primary" id="sendCodeBtn">📧 Send Reset Code</button>
+        </form>
+      </div>
+
+      <!-- Step 2: Enter Verification Code -->
+      <div id="forgotStep2" style="display:none;">
+        <p style="text-align:center; color:#666; margin-bottom:10px;">
+          Your username is: <strong id="foundUsername" style="color:#667eea;"></strong>
+        </p>
+        <p style="text-align:center; color:#666; margin-bottom:20px;">
+          📧 A 6-digit code has been sent to your email.<br>
+          <span style="font-size:12px; color:#999;">Code expires in 15 minutes</span>
+        </p>
+        <form onsubmit="handleVerifyCode(event)">
+          <div class="form-group">
+            <label>Enter 6-Digit Code</label>
+            <input type="text" id="resetCode" required maxlength="6" pattern="[0-9]{6}"
+                   style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:bold;"
+                   placeholder="000000" />
+          </div>
+          <button type="submit" class="btn-primary">✓ Verify Code</button>
+        </form>
+        <p style="text-align:center; margin-top:15px;">
+          <a href="#" onclick="resendCode(); return false;" style="font-size:13px;">📤 Resend Code</a>
+        </p>
+      </div>
+
+      <!-- Step 3: Reset Password -->
+      <div id="forgotStep3" style="display:none;">
+        <p style="text-align:center; color:#22c55e; margin-bottom:20px;">
+          ✅ Code verified! Enter your new password.
+        </p>
+        <form onsubmit="handleResetPassword(event)">
+          <div class="form-group">
+            <label>New Password</label>
+            <input type="password" id="newPassword" required minlength="6" />
+          </div>
+          <div class="form-group">
+            <label>Confirm New Password</label>
+            <input type="password" id="confirmPassword" required minlength="6" />
+          </div>
+          <button type="submit" class="btn-primary">🔐 Reset Password</button>
+        </form>
+      </div>
+
+      <p style="text-align:center; margin-top:20px;">
+        Remember your password? <a href="#" onclick="showSection('login'); return false;">Back to Login</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Register Section -->
+  <div id="registerSection" class="section">
+    <div class="auth-container">
+      <h2 style="text-align:center; margin-bottom:20px;">Create Account</h2>
+      <div id="registerError" class="error-message"></div>
+      <div id="registerSuccess" class="success-message"></div>
+
+      <!-- Step 1: Enter Registration Details -->
+      <div id="registerStep1">
+        <form onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="regUsername" required minlength="3" maxlength="50" />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="regEmail" required />
+          </div>
+          <div class="form-group">
+            <label>Display Name (optional)</label>
+            <input type="text" id="regDisplayName" maxlength="100" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="regPassword" required minlength="6" />
+          </div>
+          <button type="submit" class="btn-primary" id="registerSubmitBtn">📧 Send Verification Code</button>
+        </form>
+      </div>
+
+      <!-- Step 2: Enter Verification Code -->
+      <div id="registerStep2" style="display:none;">
+        <p style="text-align:center; color:#666; margin-bottom:10px;">
+          📧 A 6-digit code has been sent to: <strong id="regEmailDisplay" style="color:#667eea;"></strong>
+        </p>
+        <p style="text-align:center; color:#999; font-size:12px; margin-bottom:20px;">
+          Code expires in 15 minutes
+        </p>
+        <form onsubmit="handleVerifyRegistration(event)">
+          <div class="form-group">
+            <label>Enter 6-Digit Code</label>
+            <input type="text" id="regVerifyCode" required maxlength="6" pattern="[0-9]{6}"
+                   style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:bold;"
+                   placeholder="000000" />
+          </div>
+          <button type="submit" class="btn-primary">✓ Verify & Create Account</button>
+        </form>
+        <p style="text-align:center; margin-top:15px;">
+          <a href="#" onclick="resendVerificationCode(); return false;" style="font-size:13px;">📤 Resend Code</a>
+          &nbsp;|&nbsp;
+          <a href="#" onclick="resetRegisterForm(); return false;" style="font-size:13px;">← Change Details</a>
+        </p>
+      </div>
+
+      <p style="text-align:center; margin-top:20px;">
+        Already have an account? <a href="#" onclick="showSection('login'); return false;">Login</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Profile Section -->
+  <div id="profileSection" class="section">
+    <div class="profile-header">
+      <div class="profile-name" id="profileName">Player</div>
+      <div class="profile-rating">⭐ <span id="profileRating">1200</span> ELO</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="statGamesPlayed">0</div>
+        <div class="stat-label">Games Played</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statGamesWon">0</div>
+        <div class="stat-label">Wins</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statGamesDrawn">0</div>
+        <div class="stat-label">Draws</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statGamesLost">0</div>
+        <div class="stat-label">Losses</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Games History Section -->
+  <div id="gamesSection" class="section">
+    <h2 style="margin-bottom:20px;">Game History</h2>
+    <div id="gamesList" class="game-list">
+      <p style="text-align:center; color:#666;">No games found</p>
+    </div>
+  </div>
+
+  <!-- Replay Section -->
+  <div id="replaySection" class="section">
+    <button onclick="showSection('games')" style="margin-bottom:20px; padding:10px 20px; background:#667eea; color:white; border:none; border-radius:8px; cursor:pointer;">← Back to Games</button>
+    <h2 style="margin-bottom:20px;" id="replayTitle">Game Replay</h2>
+    <div class="replay-container">
+      <div class="replay-board" id="replayBoard"></div>
+      <div class="replay-controls">
+        <div class="replay-buttons">
+          <button onclick="replayFirst()">⏮</button>
+          <button onclick="replayPrev()">◀</button>
+          <button onclick="replayPlay()" id="playBtn">▶</button>
+          <button onclick="replayNext()">▶</button>
+          <button onclick="replayLast()">⏭</button>
+        </div>
+        <p style="text-align:center; margin-bottom:15px;">
+          Move <span id="currentMove">0</span> / <span id="totalMoves">0</span>
+        </p>
+        <div class="move-list-replay" id="moveListReplay"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+let currentReplayData = null;
+let currentMoveIndex = -1;
+let replayInterval = null;
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.classList.remove('active');
+  }
+}
+
+// Check if user is logged in
+async function checkAuth() {
+  try {
+    const response = await fetch('/api/auth/me');
+    if (response.ok) {
+      const data = await response.json();
+      currentUser = data.user;
+      updateUIForLoggedInUser();
+      loadUserProfile();
+    } else {
+      updateUIForGuest();
+    }
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    updateUIForGuest();
+  }
+}
+
+function updateUIForLoggedInUser() {
+  document.getElementById('loginBtn').style.display = 'none';
+  document.getElementById('registerBtn').style.display = 'none';
+  document.getElementById('profileBtn').style.display = 'inline-block';
+  document.getElementById('gamesBtn').style.display = 'inline-block';
+  document.getElementById('logoutBtn').style.display = 'inline-block';
+  showSection('profile');
+}
+
+function updateUIForGuest() {
+  document.getElementById('loginBtn').style.display = 'inline-block';
+  document.getElementById('registerBtn').style.display = 'inline-block';
+  document.getElementById('profileBtn').style.display = 'none';
+  document.getElementById('gamesBtn').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  showSection('login');
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      currentUser = data.user;
+      updateUIForLoggedInUser();
+      loadUserProfile();
+    } else {
+      errorEl.textContent = data.error || 'Login failed';
+      errorEl.style.display = 'block';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+  }
+}
+
+// Store registration data for verification flow
+let regData = {
+  username: '',
+  email: '',
+  displayName: '',
+  password: ''
+};
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const username = document.getElementById('regUsername').value;
+  const email = document.getElementById('regEmail').value;
+  const displayName = document.getElementById('regDisplayName').value || username;
+  const password = document.getElementById('regPassword').value;
+  const errorEl = document.getElementById('registerError');
+  const successEl = document.getElementById('registerSuccess');
+  const submitBtn = document.getElementById('registerSubmitBtn');
+
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+  submitBtn.disabled = true;
+  submitBtn.textContent = '⏳ Sending...';
+
+  try {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, displayName, password })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Store registration data for verification step
+      regData = { username, email, displayName, password };
+
+      // Show verification step
+      document.getElementById('regEmailDisplay').textContent = email;
+      document.getElementById('registerStep1').style.display = 'none';
+      document.getElementById('registerStep2').style.display = 'block';
+
+      successEl.textContent = '📧 Verification code sent to your email!';
+      successEl.style.display = 'block';
+    } else {
+      errorEl.textContent = data.error || 'Registration failed';
+      errorEl.style.display = 'block';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '📧 Send Verification Code';
+  }
+}
+
+async function handleVerifyRegistration(event) {
+  event.preventDefault();
+  const code = document.getElementById('regVerifyCode').value;
+  const errorEl = document.getElementById('registerError');
+  const successEl = document.getElementById('registerSuccess');
+
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+    errorEl.textContent = 'Please enter a valid 6-digit code';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/auth/verify-registration', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: regData.email, code })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      currentUser = data.user;
+      successEl.textContent = '✅ Account created successfully! Redirecting...';
+      successEl.style.display = 'block';
+
+      // Reset the form
+      resetRegisterForm();
+
+      setTimeout(() => {
+        updateUIForLoggedInUser();
+        loadUserProfile();
+      }, 1500);
+    } else {
+      errorEl.textContent = data.error || 'Invalid or expired code';
+      errorEl.style.display = 'block';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+  }
+}
+
+async function resendVerificationCode() {
+  const errorEl = document.getElementById('registerError');
+  const successEl = document.getElementById('registerSuccess');
+
+  errorEl.style.display = 'none';
+  successEl.textContent = '⏳ Resending code...';
+  successEl.style.display = 'block';
+
+  try {
+    const response = await fetch('/api/auth/resend-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: regData.email,
+        username: regData.username,
+        password: regData.password,
+        displayName: regData.displayName
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      successEl.textContent = '📧 New code sent to your email!';
+    } else {
+      errorEl.textContent = data.error || 'Failed to resend code';
+      errorEl.style.display = 'block';
+      successEl.style.display = 'none';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+    successEl.style.display = 'none';
+  }
+}
+
+function resetRegisterForm() {
+  document.getElementById('registerStep1').style.display = 'block';
+  document.getElementById('registerStep2').style.display = 'none';
+  document.getElementById('regVerifyCode').value = '';
+  document.getElementById('registerError').style.display = 'none';
+  document.getElementById('registerSuccess').style.display = 'none';
+}
+
+async function logout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    currentUser = null;
+    updateUIForGuest();
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
+}
+
+// Store data for password reset flow
+let forgotEmail = '';
+let forgotUsername = '';
+let resetCode = '';
+
+async function handleForgotUsername(event) {
+  event.preventDefault();
+  const email = document.getElementById('forgotEmail').value;
+  const errorEl = document.getElementById('forgotError');
+  const successEl = document.getElementById('forgotSuccess');
+  const sendBtn = document.getElementById('sendCodeBtn');
+
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+  sendBtn.disabled = true;
+  sendBtn.textContent = '⏳ Sending...';
+
+  try {
+    const response = await fetch('/api/auth/forgot-username', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      forgotEmail = email;
+      forgotUsername = data.username;
+      document.getElementById('foundUsername').textContent = data.username;
+      document.getElementById('forgotStep1').style.display = 'none';
+      document.getElementById('forgotStep2').style.display = 'block';
+      successEl.textContent = '📧 Reset code sent to your email!';
+      successEl.style.display = 'block';
+    } else {
+      errorEl.textContent = data.error || 'No account found with this email';
+      errorEl.style.display = 'block';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = '📧 Send Reset Code';
+  }
+}
+
+async function handleVerifyCode(event) {
+  event.preventDefault();
+  const code = document.getElementById('resetCode').value;
+  const errorEl = document.getElementById('forgotError');
+  const successEl = document.getElementById('forgotSuccess');
+
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+    errorEl.textContent = 'Please enter a valid 6-digit code';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/auth/verify-reset-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail, code })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      resetCode = code;
+      document.getElementById('forgotStep2').style.display = 'none';
+      document.getElementById('forgotStep3').style.display = 'block';
+      successEl.style.display = 'none';
+    } else {
+      errorEl.textContent = data.error || 'Invalid or expired code';
+      errorEl.style.display = 'block';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+  }
+}
+
+async function resendCode() {
+  const errorEl = document.getElementById('forgotError');
+  const successEl = document.getElementById('forgotSuccess');
+
+  errorEl.style.display = 'none';
+  successEl.textContent = '⏳ Resending code...';
+  successEl.style.display = 'block';
+
+  try {
+    const response = await fetch('/api/auth/forgot-username', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      successEl.textContent = '📧 New code sent to your email!';
+    } else {
+      errorEl.textContent = data.error || 'Failed to resend code';
+      errorEl.style.display = 'block';
+      successEl.style.display = 'none';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+    successEl.style.display = 'none';
+  }
+}
+
+async function handleResetPassword(event) {
+  event.preventDefault();
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  const errorEl = document.getElementById('forgotError');
+  const successEl = document.getElementById('forgotSuccess');
+
+  errorEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (newPassword !== confirmPassword) {
+    errorEl.textContent = 'Passwords do not match';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    errorEl.textContent = 'Password must be at least 6 characters';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: forgotEmail,
+        code: resetCode,
+        newPassword
+      })
+    });
+ghi
+    const data = await response.json();
+
+    if (response.ok) {
+      successEl.textContent = '✅ Password reset successful! Redirecting to login...';
+      successEl.style.display = 'block';
+
+      // Reset the form state
+      document.getElementById('forgotStep1').style.display = 'block';
+      document.getElementById('forgotStep2').style.display = 'none';
+      document.getElementById('forgotStep3').style.display = 'none';
+      document.getElementById('forgotEmail').value = '';
+      document.getElementById('resetCode').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      forgotEmail = '';
+      forgotUsername = '';
+      resetCode = '';
+
+      setTimeout(() => {
+        showSection('login');
+      }, 2000);
+    } else {
+      errorEl.textContent = data.error || 'Failed to reset password';
+      errorEl.style.display = 'block';
+    }
+  } catch (error) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.style.display = 'block';
+  }
+}
+
+async function loadUserProfile() {
+  if (!currentUser) return;
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.username}`);
+    const data = await response.json();
+
+    if (response.ok) {
+      const user = data.user;
+      document.getElementById('profileName').textContent = user.display_name || user.username;
+      document.getElementById('profileRating').textContent = user.elo_rating;
+      document.getElementById('statGamesPlayed').textContent = user.games_played;
+      document.getElementById('statGamesWon').textContent = user.games_won;
+      document.getElementById('statGamesDrawn').textContent = user.games_drawn;
+      document.getElementById('statGamesLost').textContent = user.games_lost;
+    }
+  } catch (error) {
+    console.error('Failed to load profile:', error);
+  }
+
+  loadUserGames();
+}
+
+async function loadUserGames() {
+  if (!currentUser) return;
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.username}/games`);
+    const data = await response.json();
+
+    if (response.ok) {
+      renderGameList(data.games);
+    }
+  } catch (error) {
+    console.error('Failed to load games:', error);
+  }
+}
+
+function renderGameList(games) {
+  const listEl = document.getElementById('gamesList');
+
+  if (!games || games.length === 0) {
+    listEl.innerHTML = '<p style="text-align:center; color:#666;">No games found</p>';
+    return;
+  }
+
+  listEl.innerHTML = games.map(game => {
+    const isWhite = game.white_username === currentUser.username;
+    const myColor = isWhite ? 'white' : 'black';
+    let result = 'draw';
+    
+    if (game.winner !== 'draw') {
+      result = game.winner === myColor ? 'win' : 'loss';
+    }
+
+    const date = new Date(game.end_time).toLocaleDateString();
+    
+    return `
+      <div class="game-card" onclick="loadReplay(${game.id})">
+        <div class="game-players">
+          ♔ ${game.white_player} vs ♚ ${game.black_player}
+        </div>
+        <span class="game-result ${result}">
+          ${result === 'win' ? '✓ Won' : result === 'loss' ? '✗ Lost' : '⚌ Draw'}
+        </span>
+        <div class="game-meta">
+          ${date} • ${game.win_reason} • ${game.time_control}s
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadReplay(gameId) {
+  try {
+    const response = await fetch(`/api/game/${gameId}/replay`);
+    const data = await response.json();
+
+    if (response.ok) {
+      if (!data.moves || data.moves.length === 0) {
+        alert('This game has no replay data. Only games played after the replay feature was added can be replayed.');
+        return;
+      }
+      currentReplayData = data;
+      currentMoveIndex = -1;
+      showSection('replay');
+      initReplay();
+    } else {
+      alert('Failed to load replay: ' + (data.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Failed to load replay:', error);
+    alert('Failed to load replay. Please try again.');
+  }
+}
+
+function initReplay() {
+  if (!currentReplayData || !currentReplayData.moves) {
+    console.error('No replay data available');
+    return;
+  }
+
+  const game = currentReplayData.game;
+  document.getElementById('replayTitle').textContent = 
+    `${game.white_player} vs ${game.black_player}`;
+  
+  document.getElementById('totalMoves').textContent = currentReplayData.moves.length;
+  document.getElementById('currentMove').textContent = 0;
+  
+  renderMoveListReplay();
+  renderReplayBoard(); // Start with initial position
+}
+
+function renderMoveListReplay() {
+  if (!currentReplayData || !currentReplayData.moves) return;
+  
+  const moves = currentReplayData.moves;
+  const listEl = document.getElementById('moveListReplay');
+
+  // Display moves in pairs (White + Black = 1 move number)
+  let html = '';
+  for (let i = 0; i < moves.length; i++) {
+    const moveNum = Math.floor(i / 2) + 1;
+    const isWhite = i % 2 === 0;
+    
+    if (isWhite) {
+      // Start new move pair
+      html += `<div class="move-item-replay ${i === currentMoveIndex || i + 1 === currentMoveIndex ? 'active' : ''}" style="display:flex; gap:10px;">
+        <span style="font-weight:700; min-width:25px;">${moveNum}.</span>
+        <span onclick="jumpToMove(${i})" style="cursor:pointer; flex:1; padding:4px; border-radius:4px; ${i === currentMoveIndex ? 'background:rgba(102, 126, 234, 0.3);' : ''}" onmouseover="this.style.background='rgba(102, 126, 234, 0.1)'" onmouseout="if(${i} !== ${currentMoveIndex}) this.style.background='transparent'">${moves[i].move_notation}</span>`;
+      
+      // Add black's move if it exists
+      if (i + 1 < moves.length) {
+        html += `<span onclick="jumpToMove(${i + 1})" style="cursor:pointer; flex:1; padding:4px; border-radius:4px; ${i + 1 === currentMoveIndex ? 'background:rgba(102, 126, 234, 0.3);' : ''}" onmouseover="this.style.background='rgba(102, 126, 234, 0.1)'" onmouseout="if(${i + 1} !== ${currentMoveIndex}) this.style.background='transparent'">${moves[i + 1].move_notation}</span>`;
+      }
+      html += `</div>`;
+    }
+  }
+  
+  listEl.innerHTML = html;
+}
+
+function renderReplayBoard(fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1') {
+  const boardEl = document.getElementById('replayBoard');
+  
+  // Parse FEN to get board position
+  const rows = fen.split(' ')[0].split('/');
+  boardEl.innerHTML = '';
+
+  for (let r = 0; r < 8; r++) {
+    let col = 0;
+    for (const char of rows[r]) {
+      if (char >= '1' && char <= '8') {
+        const emptySquares = parseInt(char);
+        for (let i = 0; i < emptySquares; i++) {
+          const sq = document.createElement('div');
+          sq.className = `replay-square ${(r + col) % 2 === 0 ? 'light' : 'dark'}`;
+          boardEl.appendChild(sq);
+          col++;
+        }
+      } else {
+        const sq = document.createElement('div');
+        sq.className = `replay-square ${(r + col) % 2 === 0 ? 'light' : 'dark'}`;
+        
+        const pieceDiv = document.createElement('div');
+        pieceDiv.className = 'replay-piece';
+        const isWhite = char === char.toUpperCase();
+        const color = isWhite ? 'w' : 'b';
+        const piece = char.toLowerCase();
+        pieceDiv.innerHTML = `<img src="https://images.chesscomfiles.com/chess-themes/pieces/neo/150/${color}${piece}.png" />`;
+        sq.appendChild(pieceDiv);
+        
+        boardEl.appendChild(sq);
+        col++;
+      }
+    }
+  }
+}
+
+function replayFirst() {
+  if (!currentReplayData) return;
+  currentMoveIndex = -1;
+  document.getElementById('currentMove').textContent = 0;
+  renderReplayBoard();
+  renderMoveListReplay();
+}
+
+function replayPrev() {
+  if (!currentReplayData) return;
+  if (currentMoveIndex > -1) {
+    currentMoveIndex--;
+    updateReplayPosition();
+  }
+}
+
+function replayNext() {
+  if (!currentReplayData) return;
+  if (currentMoveIndex < currentReplayData.moves.length - 1) {
+    currentMoveIndex++;
+    updateReplayPosition();
+  }
+}
+
+function replayLast() {
+  if (!currentReplayData) return;
+  currentMoveIndex = currentReplayData.moves.length - 1;
+  updateReplayPosition();
+}
+
+function replayPlay() {
+  if (!currentReplayData) return;
+  
+  if (replayInterval) {
+    clearInterval(replayInterval);
+    replayInterval = null;
+    document.getElementById('playBtn').textContent = '▶';
+  } else {
+    document.getElementById('playBtn').textContent = '⏸';
+    replayInterval = setInterval(() => {
+      if (currentMoveIndex >= currentReplayData.moves.length - 1) {
+        clearInterval(replayInterval);
+        replayInterval = null;
+        document.getElementById('playBtn').textContent = '▶';
+      } else {
+        replayNext();
+      }
+    }, 1000);
+  }
+}
+
+function jumpToMove(index) {
+  if (!currentReplayData) return;
+  currentMoveIndex = index;
+  updateReplayPosition();
+}
+
+function updateReplayPosition() {
+  if (!currentReplayData || !currentReplayData.moves) return;
+  
+  document.getElementById('currentMove').textContent = currentMoveIndex + 1;
+  
+  if (currentMoveIndex >= 0 && currentMoveIndex < currentReplayData.moves.length) {
+    const move = currentReplayData.moves[currentMoveIndex];
+    if (move && move.position_fen) {
+      renderReplayBoard(move.position_fen);
+    } else {
+      console.error('Move data missing FEN position:', move);
+      renderReplayBoard();
+    }
+  } else {
+    // Show starting position
+    renderReplayBoard();
+  }
+  
+  renderMoveListReplay();
+}
+
+function showSection(section) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(section + 'Section').classList.add('active');
+
+  if (section === 'games') {
+    loadUserGames();
+  }
+
+  // Reset forgot password form when navigating away
+  if (section !== 'forgot') {
+    document.getElementById('forgotStep1').style.display = 'block';
+    document.getElementById('forgotStep2').style.display = 'none';
+    document.getElementById('forgotStep3').style.display = 'none';
+    document.getElementById('forgotError').style.display = 'none';
+    document.getElementById('forgotSuccess').style.display = 'none';
+    document.getElementById('forgotEmail').value = '';
+    document.getElementById('resetCode').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    forgotEmail = '';
+    forgotUsername = '';
+    resetCode = '';
+  }
+
+  // Reset registration form when navigating away
+  if (section !== 'register') {
+    document.getElementById('registerStep1').style.display = 'block';
+    document.getElementById('registerStep2').style.display = 'none';
+    document.getElementById('registerError').style.display = 'none';
+    document.getElementById('registerSuccess').style.display = 'none';
+    document.getElementById('regVerifyCode').value = '';
+    regData = { username: '', email: '', displayName: '', password: '' };
+  }
+}
+
+// Initialize
+checkAuth();
+</script>
+
+</body>
+</html>

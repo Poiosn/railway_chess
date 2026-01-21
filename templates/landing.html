@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chess Master — Premium Edition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
+      background: #87CEEB;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 
+        0 8px 32px 0 rgba(31, 38, 135, 0.2),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+      
+      width: 95%;
+      max-width: 560px;
+      padding: 20px;
+      border-radius: 16px;
+      
+      height: auto;
+      max-height: 90vh;
+      overflow-y: auto;
+      
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: containerFadeIn 0.6s ease;
+    }
+
+    @keyframes containerFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: clamp(20px, 4vw, 29px);
+      font-weight: 900;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+      text-shadow: 0 0 30px rgba(102, 126, 234, 0.2);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #444;
+      margin-bottom: 16px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .connection-status {
+      width: 100%;
+      text-align: center;
+      padding: 8px;
+      margin-bottom: 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 11px;
+      color: white;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    .game-info {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 14px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .game-info h3 { margin-bottom: 4px; color: #333; font-size: 14px; }
+    .game-info p { font-size: 11px; color: #555; }
+
+    /* Player Stats Section - shown when logged in */
+    .player-stats {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 14px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      display: none;
+    }
+
+    .player-stats.active {
+      display: block;
+    }
+
+    .player-name-display {
+      font-size: 20px;
+      font-weight: 900;
+      color: #333;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .player-elo-display {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f5576c;
+      margin-bottom: 12px;
+    }
+
+    .stats-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .stat-mini-box {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .stat-mini-value {
+      font-size: 18px;
+      font-weight: 900;
+      color: #667eea;
+      display: block;
+    }
+
+    .stat-mini-label {
+      font-size: 8px;
+      color: #666;
+      font-weight: 600;
+      margin-top: 2px;
+      display: block;
+      text-transform: uppercase;
+    }
+
+    .auth-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-auth {
+      padding: 7px 14px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-login {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .btn-signout {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    }
+
+    .btn-auth:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .time-control-section {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 16px;
+      padding: 14px;
+      background: rgba(224, 247, 250, 0.5);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .time-control-section h4 {
+      color: #00695c;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    
+    .time-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      justify-content: center;
+    }
+
+    .time-btn {
+      flex: 1 1 60px;
+      padding: 8px 7px;
+      background: white;
+      border: 2px solid #00897b;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 10px;
+      color: #00695c;
+      transition: all 0.2s ease;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .time-btn:hover { background: #00897b; color: white; transform: translateY(-2px); }
+    .time-btn.selected { background: #00695c; color: white; border-color: #004d40; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+    .room-controls {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    input[type="text"] {
+      flex: 2;
+      min-width: 140px;
+      padding: 10px;
+      border: 2px solid rgba(102, 126, 234, 0.3);
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+      background: rgba(255,255,255,0.9);
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    input[type="text"]:focus { border-color: #667eea; background: #fff; }
+
+    button {
+      flex: 1;
+      min-width: 100px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 11px;
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+      transition: transform 0.2s;
+    }
+    button:hover { transform: translateY(-2px); }
+    button:active { transform: translateY(0); }
+
+    .btn-bot {
+      width: 100%;
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      margin-top: 10px;
+    }
+
+    .btn-spectate {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin-top: 10px;
+    }
+
+    .btn-global {
+      width: 100%;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      margin-top: 10px;
+      font-size: 13px;
+      padding: 12px 14px;
+    }
+
+    .game-item {
+      padding: 12px;
+      margin: 8px 0;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .game-item:hover {
+      background: rgba(102, 126, 234, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .game-item-players {
+      font-weight: 700;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .game-item-info {
+      font-size: 11px;
+      color: #666;
+    }
+
+    #spectateSearchInput {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    #spectateSearchInput:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    #visitorCounter {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(102, 126, 234, 0.9);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 14px;
+      text-align: center;
+      width: 100%;
+      max-width: 280px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .btn-difficulty {
+      width: 100%;
+      border: none;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .btn-difficulty:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    .btn-difficulty:active {
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary { background: #7f8c8d; }
+
+    .matchmaking-status {
+      margin-top: 15px;
+      padding: 12px;
+      background: rgba(102, 126, 234, 0.1);
+      border-radius: 10px;
+      display: none;
+    }
+
+    .matchmaking-status.active {
+      display: block;
+    }
+
+    .spinner {
+      border: 3px solid rgba(102, 126, 234, 0.3);
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        width: 90%;
+        max-height: 95vh;
+      }
+      .room-controls {
+        flex-direction: column;
+      }
+      input[type="text"], button {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0;
+        align-items: center;
+        background: #f0f8ff;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .container {
+        width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 10px 16px;
+        padding-bottom: 40px;
+        justify-content: center;
+        padding-top: 10px;
+        overflow-y: auto;
+        margin-bottom: 0;
+      }
+
+      h1 { font-size: 26px; margin-top: 0; margin-bottom: 4px; }
+
+      .subtitle { margin-bottom: 10px; font-size: 12px; }
+
+      .time-btn {
+        flex: 1 1 30%;
+        font-size: 12px;
+        padding: 8px;
+      }
+
+      .game-info, .time-control-section {
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+
+      .game-info h3 { font-size: 14px; margin-bottom: 2px; }
+      .game-info p { font-size: 12px; margin: 0; }
+      .time-control-section h4 { margin-bottom: 6px; font-size: 14px; }
+
+      .connection-status {
+        margin-bottom: 10px;
+        padding: 8px;
+        font-size: 12px;
+      }
+
+      .room-controls { margin-bottom: 10px; gap: 8px; }
+      input[type="text"] { padding: 10px; font-size: 14px; }
+      button { padding: 10px; font-size: 14px; }
+
+      .btn-bot, .btn-global {
+        margin-bottom: 10px;
+        margin-top: 0;
+      }
+
+      .btn-spectate {
+        width: 100%;
+        padding: 12px;
+        font-size: 14px;
+        margin-top: 10px;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+      }
+
+      #visitorCounter {
+        bottom: 5px;
+        right: 5px;
+        font-size: 10px;
+        padding: 4px 10px;
+        position: fixed;
+      }
+    }
+
+    @media (max-width: 400px) {
+      h1 { font-size: 22px; }
+      .subtitle { font-size: 11px; }
+
+      button {
+        padding: 10px 8px;
+        font-size: 13px;
+      }
+
+      .btn-spectate {
+        padding: 12px 8px;
+        font-size: 13px;
+        width: 100%;
+      }
+
+      input[type="text"] {
+        font-size: 13px;
+        padding: 9px;
+      }
+
+      .time-btn {
+        font-size: 11px;
+        padding: 7px 4px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      h1 { font-size: 20px; }
+      .subtitle { font-size: 10px; }
+
+      button {
+        padding: 9px 6px;
+        font-size: 12px;
+      }
+
+      .btn-spectate {
+        padding: 10px 6px;
+        font-size: 12px;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>♔ Chess Master ♚</h1>
+    <p class="subtitle">⚡ Premium Edition — Real-time Multiplayer</p>
+
+    <div class="auth-buttons">
+      <button id="loginBtn" onclick="window.location.href='/profile'" class="btn-auth btn-login">
+        🔐 Login
+      </button>
+      <button id="profileLinkBtn" onclick="window.location.href='/profile'" class="btn-auth" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); display:none;">
+        👤 My Profile
+      </button>
+      <button id="signoutBtn" onclick="signOut()" class="btn-auth btn-signout" style="display:none;">
+        🚪 Sign Out
+      </button>
+    </div>
+
+    <div id="connectionStatus" class="connection-status">✅ Welcome to Chess Master</div>
+
+    <!-- Player Stats (shown when logged in) -->
+    <div id="playerStats" class="player-stats">
+      <div class="player-name-display" id="playerNameDisplay">Player</div>
+      <div class="player-elo-display">⭐ <span id="playerEloDisplay">1200</span> ELO</div>
+      <div class="stats-mini-grid">
+        <div class="stat-mini-box">
+          <span class="stat-mini-value" id="statPlayedDisplay">0</span>
+          <span class="stat-mini-label">Played</span>
+        </div>
+        <div class="stat-mini-box">
+          <span class="stat-mini-value" id="statWinsDisplay">0</span>
+          <span class="stat-mini-label">Wins</span>
+        </div>
+        <div class="stat-mini-box">
+          <span class="stat-mini-value" id="statDrawsDisplay">0</span>
+          <span class="stat-mini-label">Draws</span>
+        </div>
+        <div class="stat-mini-box">
+          <span class="stat-mini-value" id="statLossesDisplay">0</span>
+          <span class="stat-mini-label">Losses</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Info (shown when not logged in) -->
+    <div id="gameInfo" class="game-info">
+      <h3>🎮 Game Lobby</h3>
+      <p>Play globally, with friends, or practice against our bot.</p>
+    </div>
+
+    <button onclick="playGlobal()" class="btn-global">🌍 Play Global Matchmaking</button>
+
+    <div id="matchmakingStatus" class="matchmaking-status">
+      <div class="spinner"></div>
+      <div id="matchmakingText">🔍 Searching for opponent...</div>
+      <div id="matchmakingTimer" style="margin-top:8px; font-size:11px; color:#666;"></div>
+      <button onclick="cancelMatchmaking()" style="margin-top:10px; background:#eb3349;">❌ Cancel</button>
+    </div>
+
+    <div class="time-control-section">
+      <h4>⏱️ Select Time Control</h4>
+      <div class="time-options">
+        <div class="time-btn" onclick="selectTime(60)" data-time="60">⚡ 1 min</div>
+        <div class="time-btn" onclick="selectTime(180)" data-time="180">🔥 3 min</div>
+        <div class="time-btn selected" onclick="selectTime(300)" data-time="300">♟️ 5 min</div>
+        <div class="time-btn" onclick="selectTime(600)" data-time="600">🎯 10 min</div>
+        <div class="time-btn" onclick="selectTime(900)" data-time="900">👑 15 min</div>
+      </div>
+    </div>
+
+    <div class="room-controls">
+      <input type="text" id="roomInput" placeholder="Enter room name (e.g. room1)">
+      <button onclick="createRoom()">🚪 Create Room</button>
+      <button onclick="joinRoom()">➡️ Join Room</button>
+    </div>
+
+    <button onclick="playBot()" class="btn-bot">🤖 Play vs Stockfish Bot</button>
+
+    <button onclick="showSpectateGames()" class="btn-spectate">👁️ Spectate Live Games</button>
+
+</div>
+
+<!-- Spectate Modal -->
+<div class="modal" id="spectateModal" aria-hidden="true">
+  <div class="modal-content" style="max-width: 400px;">
+    <h3>👁️ Live Games</h3>
+    <p style="color:#666;margin-top:8px; font-size:12px;">Choose a game to spectate or search by room name</p>
+    
+    <!-- Search Bar -->
+    <div style="margin-top:16px; display:flex; gap:8px;">
+      <input 
+        type="text" 
+        id="spectateSearchInput" 
+        placeholder="Search room name..." 
+        style="flex:1; padding:10px; border:2px solid rgba(102,126,234,0.3); border-radius:8px; font-size:12px; outline:none;"
+      />
+      <button onclick="spectateByRoomName()" style="padding:10px 16px; min-width:auto; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        🔍 Join
+      </button>
+    </div>
+    
+    <div style="margin:16px 0; border-top:1px solid #e0e0e0;"></div>
+    
+    <div id="activeGamesList" style="max-height:300px; overflow-y:auto;">
+      <div style="color:#999; padding:20px; text-align:center;">Loading games...</div>
+    </div>
+    <div style="margin-top:20px;">
+      <button onclick="closeSpectateModal()" class="btn-secondary">❌ Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="nameModal" aria-hidden="true">
+  <div class="modal-content">
+    <h3>👤 Enter Your Name</h3>
+    <p id="namePromptText" style="color:#666;margin-top:8px;">What should we call you?</p>
+    <input
+      type="text"
+      id="playerNameInput"
+      placeholder="e.g., Magnus, Hikaru..."
+      maxlength="20"
+      style="margin-top:16px; width:100%; box-sizing:border-box;"
+    />
+    <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
+      <button onclick="submitPlayerName()" style="background:#11998e;">✅ Go</button>
+      <button onclick="cancelNameModal()" class="btn-secondary">❌ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bot Difficulty Modal -->
+<div class="modal" id="botDifficultyModal" aria-hidden="true">
+  <div class="modal-content" style="max-width: 400px;">
+    <h3>🤖 Select Bot Difficulty</h3>
+    <p style="color:#666;margin-top:8px;font-size:13px;">Choose your challenge level:</p>
+
+    <div style="margin-top:20px; display:flex; flex-direction:column; gap:12px;">
+      <button onclick="selectBotDifficulty('easy')" class="btn-difficulty" style="background:linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding:14px; font-size:14px; border-radius:10px;">
+        <div style="font-weight:800; font-size:16px; margin-bottom:4px;">⭐ Easy</div>
+        <div style="font-size:11px; opacity:0.9;">Perfect for beginners</div>
+      </button>
+
+      <button onclick="selectBotDifficulty('medium')" class="btn-difficulty" style="background:linear-gradient(135deg, #f7971e 0%, #ffd200 100%); padding:14px; font-size:14px; border-radius:10px;">
+        <div style="font-weight:800; font-size:16px; margin-bottom:4px;">⭐⭐ Medium</div>
+        <div style="font-size:11px; opacity:0.9;">Balanced challenge</div>
+      </button>
+
+      <button onclick="selectBotDifficulty('hard')" class="btn-difficulty" style="background:linear-gradient(135deg, #eb3349 0%, #f45c43 100%); padding:14px; font-size:14px; border-radius:10px;">
+        <div style="font-weight:800; font-size:16px; margin-bottom:4px;">⭐⭐⭐ Expert</div>
+        <div style="font-size:11px; opacity:0.9;">Strong Stockfish AI</div>
+      </button>
+    </div>
+
+    <div style="margin-top:16px;">
+      <button onclick="closeBotDifficultyModal()" class="btn-secondary">❌ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="visitorCounter">
+    <span>👥 Total Visits: <span id="visitorCountValue">...</span></span>
+</div>
+
+<script>
+const socket = io({ 
+  transports: ["websocket", "polling"],
+  reconnection: true,
+  reconnectionDelay: 500,
+  reconnectionAttempts: 10
+});
+
+let pendingRoomAction = null;
+let matchmakingTimer = null;
+let matchmakingStartTime = null;
+let currentUser = null;
+
+// Check if user is logged in
+async function checkAuth() {
+  try {
+    const response = await fetch('/api/auth/me');
+    if (response.ok) {
+      const data = await response.json();
+      currentUser = data.user;
+      updateUIForLoggedInUser();
+      await loadUserStats();
+    } else {
+      updateUIForGuest();
+    }
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    updateUIForGuest();
+  }
+}
+
+function updateUIForLoggedInUser() {
+  // Hide login button, show profile link and sign out buttons
+  document.getElementById('loginBtn').style.display = 'none';
+  document.getElementById('profileLinkBtn').style.display = 'inline-block';
+  document.getElementById('signoutBtn').style.display = 'inline-block';
+  
+  // Show player stats, hide game info
+  document.getElementById('playerStats').classList.add('active');
+  document.getElementById('gameInfo').style.display = 'none';
+}
+
+function updateUIForGuest() {
+  // Show login button, hide profile link and sign out buttons
+  document.getElementById('loginBtn').style.display = 'inline-block';
+  document.getElementById('profileLinkBtn').style.display = 'none';
+  document.getElementById('signoutBtn').style.display = 'none';
+  
+  // Hide player stats, show game info
+  document.getElementById('playerStats').classList.remove('active');
+  document.getElementById('gameInfo').style.display = 'block';
+}
+
+async function loadUserStats() {
+  if (!currentUser) return;
+
+  try {
+    const response = await fetch(`/api/user/${currentUser.username}`);
+    const data = await response.json();
+
+    if (response.ok) {
+      const user = data.user;
+      document.getElementById('playerNameDisplay').textContent = user.display_name || user.username;
+      document.getElementById('playerEloDisplay').textContent = user.elo_rating;
+      document.getElementById('statPlayedDisplay').textContent = user.games_played;
+      document.getElementById('statWinsDisplay').textContent = user.games_won;
+      document.getElementById('statDrawsDisplay').textContent = user.games_drawn;
+      document.getElementById('statLossesDisplay').textContent = user.games_lost;
+    }
+  } catch (error) {
+    console.error('Failed to load stats:', error);
+  }
+}
+
+async function signOut() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    currentUser = null;
+    updateUIForGuest();
+  } catch (error) {
+    console.error('Sign out error:', error);
+  }
+}
+
+function getPlayerName() {
+  return currentUser ? (currentUser.displayName || currentUser.username) : '';
+}
+
+// Initialize on page load
+checkAuth();
+
+function selectTime(sec){
+  document.querySelectorAll(".time-btn").forEach(b=>{
+    b.classList.toggle("selected", parseInt(b.dataset.time) === sec);
+  });
+}
+
+function createRoom(){
+  const timeBtn = document.querySelector(".time-btn.selected");
+  const timeControl = timeBtn ? parseInt(timeBtn.dataset.time) : 300;
+  const roomInput = document.getElementById("roomInput");
+  const room = roomInput ? (roomInput.value.trim() || ("room" + Math.random().toString(36).slice(2,6))) : "room" + Math.random().toString(36).slice(2,6);
+  showNameModal("create", { room, timeControl });
+}
+
+function joinRoom(){
+  const roomInput = document.getElementById("roomInput");
+  const room = roomInput ? roomInput.value.trim() : "";
+  if(!room) {
+    alert("Please enter a room name to join!");
+    return;
+  }
+  showNameModal("join", { room });
+}
+
+function playBot(){
+  const timeBtn = document.querySelector(".time-btn.selected");
+  const timeControl = timeBtn ? parseInt(timeBtn.dataset.time) : 300;
+  const room="bot-"+Math.random().toString(36).slice(2,8);
+
+  // Show difficulty modal first
+  showBotDifficultyModal({ room, timeControl });
+}
+
+function playGlobal(){
+  const timeBtn = document.querySelector(".time-btn.selected");
+  const timeControl = timeBtn ? parseInt(timeBtn.dataset.time) : 300;
+  showNameModal("global", { timeControl });
+}
+
+function showNameModal(actionType, actionData = {}) {
+  console.log("showNameModal called:", actionType, actionData);
+
+  // If user is logged in, skip name modal
+  if (currentUser) {
+    console.log("User is logged in, skipping name modal");
+    const playerName = currentUser.displayName || currentUser.username;
+    executeGameAction(actionType, actionData, playerName);
+    return;
+  }
+
+  // Show name modal for guests
+  const modal = document.getElementById("nameModal");
+  const promptText = document.getElementById("namePromptText");
+  const input = document.getElementById("playerNameInput");
+
+  if (!modal || !input) {
+    console.error("Modal or input not found!");
+    return;
+  }
+
+  input.value = "";
+  if (actionType === "create") promptText.textContent = "Creating Room. Your name?";
+  else if (actionType === "join") promptText.textContent = "Joining Room. Your name?";
+  else if (actionType === "bot") promptText.textContent = "Playing vs Bot. Your name?";
+  else if (actionType === "global") promptText.textContent = "Global Matchmaking. Your name?";
+
+  pendingRoomAction = { type: actionType, data: actionData };
+  modal.classList.add("active");
+  setTimeout(()=>input.focus(), 100);
+
+  input.onkeydown = (e) => {
+    if (e.key === "Enter") submitPlayerName();
+  };
+}
+
+function executeGameAction(type, data, playerName) {
+  console.log("executeGameAction called:", type, data, playerName);
+
+  // Build user_id param if logged in
+  const userParam = currentUser && currentUser.id ? `&user_id=${currentUser.id}` : '';
+
+  if (type === "create") {
+    window.location.href = `/game?mode=create&room=${encodeURIComponent(data.room)}&name=${encodeURIComponent(playerName)}&time=${data.timeControl}${userParam}`;
+  } else if (type === "join") {
+    window.location.href = `/game?mode=join&room=${encodeURIComponent(data.room)}&name=${encodeURIComponent(playerName)}${userParam}`;
+  } else if (type === "bot") {
+    const difficulty = data.difficulty || "medium";
+    const url = `/game?mode=bot&room=${encodeURIComponent(data.room)}&name=${encodeURIComponent(playerName)}&time=${data.timeControl}&difficulty=${difficulty}${userParam}`;
+    console.log("Navigating to:", url);
+    window.location.href = url;
+  } else if (type === "global") {
+    socket.emit("join_matchmaking", { playerName, timeControl: data.timeControl, user_id: currentUser?.id || null });
+    startMatchmakingUI();
+  }
+}
+
+function submitPlayerName() {
+  const input = document.getElementById("playerNameInput");
+  const nameValue = input ? input.value.trim() : "";
+  if (!nameValue) {
+    alert("Please enter your name");
+    return;
+  }
+  document.getElementById("nameModal").classList.remove("active");
+  
+  if (pendingRoomAction) {
+    const { type, data } = pendingRoomAction;
+    executeGameAction(type, data, nameValue);
+    pendingRoomAction = null;
+  }
+}
+
+function startMatchmakingUI() {
+  const statusDiv = document.getElementById("matchmakingStatus");
+  const textDiv = document.getElementById("matchmakingText");
+  const timerDiv = document.getElementById("matchmakingTimer");
+  
+  statusDiv.classList.add("active");
+  textDiv.textContent = "🔍 Searching for opponent...";
+  timerDiv.textContent = "";
+  
+  matchmakingStartTime = Date.now();
+  
+  // Start timer
+  matchmakingTimer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - matchmakingStartTime) / 1000);
+    timerDiv.textContent = `Time: ${elapsed}s`;
+    
+    // After 30 seconds, show alternative options
+    if (elapsed >= 30) {
+      textDiv.innerHTML = "🕒 Taking longer than expected...<br>Try playing with bot or friends!";
+    }
+  }, 1000);
+}
+
+function cancelMatchmaking() {
+  socket.emit("cancel_matchmaking");
+  const statusDiv = document.getElementById("matchmakingStatus");
+  statusDiv.classList.remove("active");
+  
+  if (matchmakingTimer) {
+    clearInterval(matchmakingTimer);
+    matchmakingTimer = null;
+  }
+}
+
+function cancelNameModal() {
+  document.getElementById("nameModal").classList.remove("active");
+  pendingRoomAction = null;
+}
+
+// === BOT DIFFICULTY MODAL ===
+let pendingBotData = null;
+
+function showBotDifficultyModal(data) {
+  console.log("showBotDifficultyModal called with data:", data);
+  pendingBotData = data;
+  const modal = document.getElementById("botDifficultyModal");
+  if (modal) {
+    console.log("Opening bot difficulty modal");
+    modal.classList.add("active");
+  } else {
+    console.error("Bot difficulty modal not found!");
+  }
+}
+
+function closeBotDifficultyModal() {
+  const modal = document.getElementById("botDifficultyModal");
+  if (modal) modal.classList.remove("active");
+  pendingBotData = null;
+}
+
+function selectBotDifficulty(difficulty) {
+  if (!pendingBotData) {
+    console.error("No pending bot data!");
+    return;
+  }
+
+  console.log("Selected difficulty:", difficulty);
+  console.log("Pending bot data:", pendingBotData);
+
+  // Add difficulty to the data before closing modal
+  const botData = { ...pendingBotData, difficulty: difficulty };
+
+  console.log("Bot data with difficulty:", botData);
+
+  // Close difficulty modal
+  closeBotDifficultyModal();
+
+  // Show name modal for bot game
+  showNameModal("bot", botData);
+}
+
+// === SPECTATE MODE ===
+async function showSpectateGames() {
+  const modal = document.getElementById("spectateModal");
+  const gamesList = document.getElementById("activeGamesList");
+  
+  if (!modal || !gamesList) return;
+  
+  modal.classList.add("active");
+  gamesList.innerHTML = '<div style="color:#999; padding:20px; text-align:center;">Loading games...</div>';
+  
+  // Add Enter key listener to search input
+  const searchInput = document.getElementById("spectateSearchInput");
+  if (searchInput) {
+    searchInput.onkeydown = (e) => {
+      if (e.key === "Enter") {
+        spectateByRoomName();
+      }
+    };
+    // Focus on search input
+    setTimeout(() => searchInput.focus(), 100);
+  }
+  
+  try {
+    const response = await fetch('/api/active-games');
+    const games = await response.json();
+    
+    if (games.length === 0) {
+      gamesList.innerHTML = '<div style="color:#999; padding:20px; text-align:center;">No active games to spectate</div>';
+      return;
+    }
+    
+    gamesList.innerHTML = games.map(game => `
+      <div class="game-item" onclick="spectateGame('${game.room}')">
+        <div class="game-item-players">
+          ♔ ${game.whiteName} vs ♚ ${game.blackName}
+        </div>
+        <div class="game-item-info">
+          👥 ${game.spectators} spectator${game.spectators !== 1 ? 's' : ''} • ${game.gameMode === 'global' ? '🌍 Global' : '👥 Friend'} • 📍 ${game.room}
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Failed to load games:', error);
+    gamesList.innerHTML = '<div style="color:#dc2626; padding:20px; text-align:center;">Failed to load games</div>';
+  }
+}
+
+function spectateGame(room) {
+  const params = new URLSearchParams({
+    room: room,
+    name: 'Spectator',
+    mode: 'spectate',
+    time: 300
+  });
+  window.location.href = `/game?${params.toString()}`;
+}
+
+function spectateByRoomName() {
+  const input = document.getElementById("spectateSearchInput");
+  const roomName = input ? input.value.trim() : "";
+  
+  if (!roomName) {
+    alert("Please enter a room name");
+    return;
+  }
+  
+  // Close modal and navigate to spectate
+  closeSpectateModal();
+  spectateGame(roomName);
+}
+
+function closeSpectateModal() {
+  const modal = document.getElementById("spectateModal");
+  if (modal) modal.classList.remove("active");
+  
+  // Clear search input
+  const input = document.getElementById("spectateSearchInput");
+  if (input) input.value = "";
+}
+
+// Socket events for matchmaking
+socket.on("matchmaking_status", (data) => {
+  if (data.status === "searching") {
+    console.log("In matchmaking queue...");
+  }
+});
+
+socket.on("matchmaking_found", (data) => {
+  if (matchmakingTimer) {
+    clearInterval(matchmakingTimer);
+    matchmakingTimer = null;
+  }
+
+  const statusDiv = document.getElementById("matchmakingStatus");
+  statusDiv.classList.remove("active");
+
+  // Navigate to game with the assigned player name and user_id if logged in
+  const params = new URLSearchParams({
+    room: data.room,
+    name: data.playerName,  // Use the assigned name from server
+    mode: "global"
+  });
+  if (currentUser && currentUser.id) {
+    params.set('user_id', currentUser.id);
+  }
+  window.location.href = `/game?${params.toString()}`;
+});
+
+socket.on("matchmaking_cancelled", () => {
+  const statusDiv = document.getElementById("matchmakingStatus");
+  statusDiv.classList.remove("active");
+  
+  if (matchmakingTimer) {
+    clearInterval(matchmakingTimer);
+    matchmakingTimer = null;
+  }
+});
+
+(async function() {
+    try {
+        const response = await fetch('/api/visitor-count');
+        const data = await response.json();
+        const el = document.getElementById('visitorCountValue');
+        if(el) el.textContent = data.visitor_count || '0';
+    } catch (e) { console.error("Visitor count failed"); }
+})();
+</script>
+</body>
+</html>
