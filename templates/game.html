@@ -699,14 +699,21 @@
       font-size: 10px;
       outline: none;
       transition: all 0.3s ease;
+      min-width: 0;
     }
     .chat-input input:focus {
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
+    .chat-input button {
+      flex-shrink: 0;
+      padding: 6px 10px;
+      min-width: 50px;
+    }
 
     .emoji-picker-wrap {
       position: relative;
+      flex-shrink: 0;
     }
 
     .emoji-btn {
@@ -1118,201 +1125,441 @@
     /* MOBILE */
     @media (max-width: 768px) {
       body {
-        padding: 4px;
+        padding: 0;
+        margin: 0;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: block;
+        justify-content: flex-start;
+        align-items: flex-start;
+        overflow-x: hidden;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       .container {
-        padding: 6px;
-        border-radius: 10px;
+        padding: 10px;
+        border-radius: 0;
+        width: 100%;
+        max-width: 100%;
+        min-height: auto;
         max-height: none;
-        overflow-y: visible;
+        overflow: visible;
+        display: block;
+        box-shadow: none;
       }
 
       .header {
-        margin-bottom: 4px;
+        margin-bottom: 8px;
+        text-align: center;
+        display: block;
       }
 
       h1 {
-        font-size: 14px;
-        margin-bottom: 1px;
+        font-size: 18px;
+        margin-bottom: 2px;
       }
 
       .subtitle {
-        font-size: 7px;
+        font-size: 9px;
       }
 
       .sound-toggle {
-        width: 24px;
-        height: 24px;
-        font-size: 12px;
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
       }
 
       .game-info-bar {
-        padding: 3px 8px;
-        margin-bottom: 4px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        display: block;
       }
 
       .game-info-bar h3 {
-        font-size: 9px;
+        font-size: 12px;
       }
 
       .game-layout {
-        gap: 6px;
+        display: block;
       }
 
       .board-section {
-        gap: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 12px;
       }
 
       .player-card {
-        padding: 3px 6px;
-        min-height: 28px;
+        padding: 12px 16px;
+        min-height: 48px;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      .player-card.black {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
 
       .player-avatar {
-        width: 18px;
-        height: 18px;
-        font-size: 10px;
+        width: 28px;
+        height: 28px;
+        font-size: 15px;
       }
 
       .player-name-text {
-        font-size: 9px;
+        font-size: 14px;
       }
 
       .timer {
-        padding: 2px 6px;
-        font-size: 9px;
-        min-width: 42px;
+        padding: 8px 16px;
+        font-size: 15px;
+        min-width: 70px;
       }
 
       .turn-indicator {
-        padding: 2px;
-        font-size: 8px;
-        height: 22px;
+        padding: 10px;
+        font-size: 13px;
+        min-height: 36px;
+        height: auto;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
 
       .board-wrapper {
-        max-width: 100%;
-        max-height: none;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 8px 0;
       }
 
       .chessboard {
         border: 2px solid #2c3e50;
         border-radius: 8px;
+        width: calc(100vw - 20px);
+        height: calc(100vw - 20px);
+        max-width: 380px;
+        max-height: 380px;
       }
 
       .square-coord {
-        font-size: 6px;
+        font-size: 8px;
       }
 
       .move-nav-bar {
-        margin-top: 4px;
-        gap: 4px;
-        padding: 6px;
+        margin-top: 8px;
+        gap: 8px;
+        padding: 10px;
       }
 
       .nav-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
+        width: 36px;
+        height: 36px;
+        font-size: 15px;
       }
 
       .live-btn {
-        min-width: 60px;
-        height: 30px;
-        font-size: 10px;
-        padding: 0 10px;
+        min-width: 70px;
+        height: 36px;
+        font-size: 12px;
+        padding: 0 12px;
         gap: 4px;
       }
 
       .sidebar {
-        gap: 6px;
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      /* Hide move history on mobile */
+      #moveHistoryCard {
+        display: none !important;
       }
 
       .card {
-        padding: 6px;
+        padding: 10px;
       }
 
       .card h4 {
-        margin-bottom: 4px;
-        font-size: 9px;
+        margin-bottom: 10px;
+        font-size: 14px;
       }
 
-      .move-list {
-        max-height: 100px;
-        grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr);
-        gap: 3px;
-      }
-
-      .move-number {
-        font-size: 8px;
-        padding: 2px;
-      }
-
-      .move-item {
-        padding: 3px 4px;
-        font-size: 9px;
+      /* Chat Card - Mobile Optimized */
+      #chatCard {
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
       }
 
       .chat-messages {
-        height: 100px;
-        max-height: 100px;
-        padding: 4px;
-        gap: 3px;
+        height: 120px;
+        max-height: 120px;
+        min-height: 120px;
+        padding: 10px;
+        gap: 8px;
+        background: rgba(248, 249, 250, 0.7);
+        border-radius: 10px;
+        margin-bottom: 10px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
-      .chat-message {
-        padding: 4px 6px;
-        font-size: 9px;
+      .chat-line {
+        padding: 10px 12px;
+        font-size: 13px;
+        border-radius: 10px;
+        max-width: 85%;
       }
 
-      .chat-input-wrapper {
-        gap: 3px;
+      .typing-indicator {
+        height: 16px;
+        font-size: 11px;
+        margin-bottom: 8px;
+      }
+
+      .chat-input {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .emoji-picker-wrap {
+        flex-shrink: 0;
+      }
+
+      .emoji-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+      }
+
+      .emoji-panel {
+        bottom: 100%;
+        left: 0;
+        margin-bottom: 10px;
       }
 
       #chatInput {
-        padding: 4px 6px;
-        font-size: 9px;
-        height: 28px;
+        flex: 1;
+        padding: 12px 14px;
+        font-size: 15px;
+        height: 44px;
+        border-radius: 10px;
+        min-width: 0;
       }
 
-      #sendChat {
-        min-width: 50px;
-        padding: 4px 8px;
-        font-size: 9px;
-        height: 28px;
+      .chat-input button {
+        min-width: 65px;
+        padding: 12px 16px;
+        font-size: 13px;
+        height: 44px;
+        border-radius: 10px;
+        flex-shrink: 0;
       }
 
       .game-actions-card {
-        margin-top: 4px;
-        padding: 6px;
+        margin-top: 0;
+        padding: 12px;
       }
 
       .action-buttons-bottom {
-        gap: 4px;
+        gap: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
       }
 
       .action-buttons-bottom button {
-        padding: 5px 8px;
-        font-size: 9px;
-        gap: 3px;
+        padding: 12px 16px;
+        font-size: 12px;
+        gap: 5px;
+        flex: 1;
+        min-width: 90px;
       }
 
       .button-group {
         grid-template-columns: 1fr 1fr;
-        gap: 6px;
-        margin-top: 8px;
+        gap: 10px;
+        margin-top: 12px;
       }
 
       .modal-content {
-        padding: 20px;
-        width: 90%;
-        max-width: 350px;
+        padding: 28px;
+        width: 92%;
+        max-width: 360px;
       }
 
       .game-end-icon {
-        font-size: 40px;
+        font-size: 48px;
+      }
+
+      #gameEndTitle {
+        font-size: 22px;
+      }
+
+      #gameEndMessage {
+        font-size: 13px;
+      }
+
+      .modal-buttons button {
+        padding: 12px 20px;
+        font-size: 12px;
+      }
+    }
+
+    /* SMALL MOBILE */
+    @media (max-width: 400px) {
+      .container {
+        padding: 8px;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      .subtitle {
+        font-size: 8px;
+      }
+
+      .sound-toggle {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+      }
+
+      .game-info-bar {
+        padding: 6px 10px;
+        margin-bottom: 8px;
+      }
+
+      .game-info-bar h3 {
+        font-size: 11px;
+      }
+
+      .board-section {
+        gap: 8px;
+      }
+
+      .player-card {
+        padding: 10px 12px;
+        min-height: 44px;
+      }
+
+      .player-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 13px;
+      }
+
+      .player-name-text {
+        font-size: 12px;
+      }
+
+      .timer {
+        padding: 6px 12px;
+        min-width: 58px;
+        font-size: 13px;
+      }
+
+      .turn-indicator {
+        font-size: 11px;
+        min-height: 30px;
+        padding: 8px;
+      }
+
+      .chessboard {
+        width: calc(100vw - 18px);
+        height: calc(100vw - 18px);
+        max-width: 350px;
+        max-height: 350px;
+      }
+
+      .move-nav-bar {
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .nav-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+      }
+
+      .live-btn {
+        min-width: 65px;
+        height: 34px;
+        font-size: 11px;
+        padding: 0 12px;
+      }
+
+      .card {
+        padding: 10px;
+      }
+
+      .card h4 {
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+
+      /* Chat - Small Mobile */
+      .chat-messages {
+        height: 100px;
+        max-height: 100px;
+        min-height: 100px;
+        padding: 8px;
+        gap: 6px;
+      }
+
+      .chat-line {
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+
+      .typing-indicator {
+        height: 14px;
+        font-size: 10px;
+      }
+
+      .emoji-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 15px;
+      }
+
+      #chatInput {
+        font-size: 14px;
+        height: 40px;
+        padding: 10px 12px;
+      }
+
+      .chat-input button {
+        font-size: 12px;
+        height: 40px;
+        min-width: 58px;
+        padding: 8px 12px;
+      }
+
+      .action-buttons-bottom button {
+        padding: 8px 10px;
+        font-size: 10px;
+      }
+
+      .modal-content {
+        padding: 18px;
+      }
+
+      .game-end-icon {
+        font-size: 38px;
       }
 
       #gameEndTitle {
@@ -1329,67 +1576,94 @@
       }
     }
 
-    /* SMALL MOBILE */
-    @media (max-width: 400px) {
+    /* LANDSCAPE MOBILE */
+    @media (max-height: 600px) and (orientation: landscape) {
       body {
-        padding: 3px;
+        padding: 0;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: block;
+        overflow-x: hidden;
+        overflow-y: auto;
       }
 
       .container {
-        padding: 5px;
+        min-height: auto;
+        max-height: none;
+        padding: 8px;
+        overflow: visible;
+        display: block;
+      }
+
+      .header {
+        margin-bottom: 6px;
       }
 
       h1 {
-        font-size: 13px;
+        font-size: 14px;
       }
 
       .subtitle {
-        font-size: 6px;
-      }
-
-      .sound-toggle {
-        width: 22px;
-        height: 22px;
-        font-size: 11px;
+        display: none;
       }
 
       .game-info-bar {
-        padding: 2px 6px;
+        padding: 4px 10px;
+        margin-bottom: 6px;
       }
 
-      .game-info-bar h3 {
-        font-size: 8px;
+      .game-layout {
+        display: grid;
+        grid-template-columns: 1fr 240px;
+        gap: 10px;
+      }
+
+      .board-section {
+        gap: 6px;
+        display: flex;
+        flex-direction: column;
       }
 
       .player-card {
-        padding: 2px 5px;
-        min-height: 26px;
+        min-height: 32px;
+        padding: 5px 10px;
       }
 
       .player-avatar {
-        width: 16px;
-        height: 16px;
-        font-size: 9px;
-      }
-
-      .player-name-text {
-        font-size: 8px;
+        width: 20px;
+        height: 20px;
+        font-size: 11px;
       }
 
       .timer {
-        padding: 2px 5px;
-        min-width: 38px;
-        font-size: 8px;
+        padding: 4px 10px;
+        font-size: 11px;
       }
 
       .turn-indicator {
-        font-size: 7px;
-        height: 20px;
+        height: 24px;
+        font-size: 10px;
+      }
+
+      .board-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .chessboard {
+        border: 2px solid #2c3e50;
+        width: calc(100vh - 100px);
+        height: calc(100vh - 100px);
+        max-width: 300px;
+        max-height: 300px;
       }
 
       .move-nav-bar {
-        gap: 3px;
-        padding: 5px;
+        margin-top: 6px;
+        padding: 8px;
+        gap: 6px;
       }
 
       .nav-btn {
@@ -1398,233 +1672,209 @@
         font-size: 11px;
       }
 
-      .live-btn {
-        min-width: 55px;
+      .nav-btn {
+        width: 28px;
         height: 28px;
-        font-size: 9px;
-        padding: 0 8px;
-      }
-
-      .card {
-        padding: 5px;
-      }
-
-      .card h4 {
-        font-size: 8px;
-      }
-
-      .move-list {
-        max-height: 90px;
-      }
-
-      .move-number {
-        font-size: 7px;
-      }
-
-      .move-item {
-        font-size: 8px;
-        padding: 2px 3px;
-      }
-
-      .chat-messages {
-        height: 90px;
-        max-height: 90px;
-      }
-
-      .chat-message {
-        font-size: 8px;
-        padding: 3px 5px;
-      }
-
-      #chatInput {
-        font-size: 8px;
-        height: 26px;
-      }
-
-      #sendChat {
-        font-size: 8px;
-        height: 26px;
-        min-width: 45px;
-      }
-
-      .action-buttons-bottom button {
-        padding: 4px 6px;
-        font-size: 8px;
-      }
-
-      .modal-content {
-        padding: 16px;
-      }
-
-      .game-end-icon {
-        font-size: 35px;
-      }
-
-      #gameEndTitle {
-        font-size: 16px;
-      }
-
-      #gameEndMessage {
-        font-size: 10px;
-      }
-
-      .modal-buttons button {
-        padding: 7px 14px;
-        font-size: 10px;
-      }
-    }
-
-    /* LANDSCAPE MOBILE */
-    @media (max-height: 600px) and (orientation: landscape) {
-      body {
-        padding: 3px;
-        overflow-y: auto;
-      }
-
-      .container {
-        max-height: none;
-        padding: 4px;
-      }
-
-      .header {
-        margin-bottom: 3px;
-      }
-
-      h1 {
         font-size: 12px;
       }
 
-      .subtitle {
-        font-size: 6px;
-      }
-
-      .game-info-bar {
-        padding: 2px 6px;
-        margin-bottom: 3px;
-      }
-
-      .game-layout {
-        grid-template-columns: 1fr 250px;
-        gap: 6px;
-      }
-
-      .board-section {
-        gap: 3px;
-      }
-
-      .player-card {
-        min-height: 24px;
-        padding: 2px 5px;
-      }
-
-      .player-avatar {
-        width: 16px;
-        height: 16px;
-        font-size: 9px;
-      }
-
-      .timer {
-        padding: 2px 5px;
-        font-size: 8px;
-      }
-
-      .turn-indicator {
-        height: 20px;
-        font-size: 7px;
-      }
-
-      .board-wrapper {
-        max-width: 280px;
-        max-height: 280px;
-      }
-
-      .chessboard {
-        border: 2px solid #2c3e50;
-      }
-
-      .move-nav-bar {
-        margin-top: 3px;
-        padding: 4px;
-        gap: 3px;
-      }
-
-      .nav-btn {
-        width: 24px;
-        height: 24px;
-        font-size: 10px;
-      }
-
       .live-btn {
-        min-width: 50px;
-        height: 26px;
-        font-size: 8px;
-        padding: 0 8px;
+        min-width: 60px;
+        height: 30px;
+        font-size: 10px;
+        padding: 0 10px;
       }
 
       .sidebar {
-        gap: 4px;
+        gap: 8px;
+      }
+
+      /* Hide move history in landscape */
+      #moveHistoryCard {
+        display: none !important;
       }
 
       .card {
-        padding: 4px;
+        padding: 10px;
       }
 
       .card h4 {
-        font-size: 8px;
-        margin-bottom: 3px;
+        font-size: 11px;
+        margin-bottom: 6px;
+      }
+
+      /* Chat - Landscape */
+      #chatCard {
+        display: flex;
+        flex-direction: column;
       }
 
       .chat-messages {
         height: 80px;
         max-height: 80px;
+        min-height: 80px;
+        padding: 8px;
+        gap: 5px;
+        margin-bottom: 8px;
       }
 
-      .move-list {
-        max-height: 80px;
+      .chat-line {
+        font-size: 11px;
+        padding: 6px 8px;
       }
 
-      .move-number, .move-item {
-        font-size: 7px;
-        padding: 2px;
+      .typing-indicator {
+        height: 12px;
+        font-size: 9px;
+        margin-bottom: 5px;
       }
 
-      .chat-message {
-        font-size: 7px;
-        padding: 3px 4px;
+      .chat-input {
+        gap: 8px;
       }
 
-      #chatInput, #sendChat {
-        font-size: 8px;
-        height: 24px;
-        padding: 3px 5px;
+      .emoji-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+
+      #chatInput {
+        font-size: 12px;
+        height: 34px;
+        padding: 8px 10px;
+      }
+
+      .chat-input button {
+        font-size: 11px;
+        height: 34px;
+        padding: 8px 12px;
+        min-width: 55px;
+      }
+
+      .action-buttons-bottom {
+        gap: 8px;
       }
 
       .action-buttons-bottom button {
-        padding: 4px 6px;
-        font-size: 8px;
+        padding: 8px 12px;
+        font-size: 10px;
       }
     }
 
     /* VERY SMALL SCREENS */
     @media (max-width: 360px) {
+      .container {
+        padding: 6px;
+      }
+
       h1 {
-        font-size: 12px;
+        font-size: 14px;
       }
 
       .subtitle {
-        font-size: 5px;
-      }
-
-      .game-info-bar h3 {
         font-size: 7px;
       }
 
+      .game-info-bar {
+        padding: 5px 8px;
+        margin-bottom: 6px;
+      }
+
+      .game-info-bar h3 {
+        font-size: 10px;
+      }
+
+      .board-section {
+        gap: 6px;
+      }
+
+      .player-card {
+        padding: 8px 10px;
+        min-height: 38px;
+      }
+
+      .player-avatar {
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+      }
+
+      .player-name-text {
+        font-size: 11px;
+      }
+
+      .timer {
+        padding: 5px 10px;
+        min-width: 52px;
+        font-size: 12px;
+      }
+
+      .turn-indicator {
+        font-size: 10px;
+        min-height: 28px;
+        padding: 6px;
+      }
+
       .chessboard {
-        border: 1px solid #2c3e50;
+        width: calc(100vw - 14px);
+        height: calc(100vw - 14px);
+        max-width: 320px;
+        max-height: 320px;
       }
 
       .square-coord {
-        font-size: 5px;
+        font-size: 6px;
+      }
+
+      .nav-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+      }
+
+      .live-btn {
+        min-width: 58px;
+        height: 32px;
+        font-size: 10px;
+      }
+
+      /* Chat - Very Small Screens */
+      .chat-messages {
+        height: 90px;
+        max-height: 90px;
+        min-height: 90px;
+        padding: 6px;
+      }
+
+      .chat-line {
+        font-size: 11px;
+        padding: 6px 8px;
+      }
+
+      .emoji-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+      }
+
+      #chatInput {
+        font-size: 13px;
+        height: 36px;
+        padding: 8px 10px;
+      }
+
+      .chat-input button {
+        font-size: 11px;
+        height: 36px;
+        min-width: 52px;
+        padding: 8px 10px;
+      }
+
+      .action-buttons-bottom button {
+        padding: 10px 12px;
+        font-size: 11px;
+        min-width: 80px;
       }
     }
   </style>
@@ -1705,13 +1955,13 @@
         <!-- SIDEBAR -->
         <div class="sidebar">
           <!-- MOVE HISTORY -->
-          <div class="card">
+          <div class="card" id="moveHistoryCard">
             <h4>📜 Move History</h4>
             <div class="move-list" id="moveList"></div>
           </div>
 
           <!-- CHAT -->
-          <div class="card">
+          <div class="card" id="chatCard">
             <h4>💬 Live Chat</h4>
             <div class="chat-messages" id="chatMessages"></div>
             <div class="typing-indicator" id="typingIndicator"></div>
@@ -3057,7 +3307,8 @@ function showGameEndModal(winner, reason) {
     message.textContent = reason === "agreement" ? "Draw by mutual agreement" :
                           reason === "stalemate" ? "Draw by stalemate" :
                           reason === "insufficient" ? "Draw by insufficient material" :
-                          reason === "repetition" ? "Draw by repetition" :
+                          reason === "repetition" ? "Draw by threefold repetition" :
+                          reason === "fifty_moves" ? "Draw by fifty-move rule" :
                           "The game ended in a draw";
   } else {
     const isPlayerWin = winner === playerColor;
